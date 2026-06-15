@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gatekeeper SDK — ESM template</title>
+  </head>
+  <body>
+    <h1>Gatekeeper SDK (ESM)</h1>
+    <p>Open the browser console for SDK output.</p>
+
+    <!--
+      Prerequisites:
+      1. tar -xzf packages/gatekeeper-web-sdk-1.0.0.tgz
+      2. Serve sdk/safe-sdk.esm.min.js from your web root (path below)
+      3. Implement GET /api/gatekeeper-token on your backend
+    -->
+    <script type="module">
+      import SafeSDK from './sdk/safe-sdk.esm.min.js'
+
+      const sdk = new SafeSDK({
+        baseUrl: 'bespot-base-url',
+        apiKey: 'your-api-key',
+        applicationId: 'your-application-id',
+        applicationVersion: '1.0.0',
+      })
+
+      async function startGatekeeper() {
+        try {
+          const response = await fetch('/api/gatekeeper-token')
+          if (!response.ok) {
+            throw new Error('Could not fetch Gatekeeper token from backend')
+          }
+          const jwt = (await response.text()).trim()
+          if (!jwt) {
+            throw new Error('Backend returned an empty token')
+          }
+
+          await sdk.initialize(jwt)
+
+          sdk.setUserId('client-user-123')
+
+          const result = await sdk.check()
+          if (result instanceof Error) {
+            console.error('[CHECK FAILED]', result.name, '-', result.message)
+            return
+          }
+          console.log('[CHECK OK]', {
+            action: result.action,
+            ticket: result.ticket,
+            timestamp: result.timestamp,
+          })
+
+          sdk.subscribe(
+            30000,
+            (periodicResult) => {
+              if (periodicResult instanceof Error) {
+                console.error(
+                  '[PERIODIC FAILED]',
+                  periodicResult.name,
+                  '-',
+                  periodicResult.message,
+                )
+                return
+              }
+              console.log('[PERIODIC OK]', {
+                action: periodicResult.action,
+                ticket: periodicResult.ticket,
+              })
+            },
+            (callbackError) => {
+              console.error('[CALLBACK ERROR]', callbackError)
+            },
+          )
+
+          // sdk.unsubscribe()
+        } catch (error) {
+          const err = error instanceof Error ? error : new Error(String(error))
+          console.error('[INITIALIZE FAILED]', err.name, '-', err.message)
+        }
+      }
+
+      startGatekeeper()
+    </script>
+  </body>
+</html>
