@@ -77,7 +77,7 @@ The **API key** (`apiKey` in SDK config) is sent on **Gatekeeper** requests (`x-
 ### Environment requirements
 
 - **HTTPS** in production (required for geolocation and device persistence).
-- **CORS**: the Gatekeeper `baseUrl` must accept browser requests from your site's origin.
+- **CORS**: the Gatekeeper `baseUrl` must accept browser requests from your site's origin. Allowlisting is configured by Bespot. If DevTools shows a CORS error on requests to `baseUrl`, see [§13](#cors-errors-in-the-browser).
 - **Geolocation**: the SDK needs browser location permission to obtain the user's position. Tell your users why location is required; if they deny permission, location-dependent checks will not work (see [§10](#10-geolocation)).
 
 ---
@@ -437,7 +437,7 @@ When logging errors, use **`error.name`** and **`error.message`**.
 | `GeolocationNotSupported` | Browser has no Geolocation API | Use a supported browser; cannot recover on that client |
 | `NoRecipeFound` | No backend recipe for your app config | Contact Bespot with `applicationId` + `applicationVersion` |
 | `NoCheckFound` | No checks available for your app | Contact Bespot with `applicationId` + `applicationVersion` |
-| `NetworkError` | Browser could not reach Gatekeeper (`fetch` failed) | Check network, `baseUrl`, CORS, HTTPS |
+| `NetworkError` | Browser could not reach Gatekeeper (`fetch` failed) | Check network, `baseUrl`, HTTPS; if DevTools shows CORS, contact Bespot ([§13](#cors-errors-in-the-browser)) |
 | `ServerError` | Gatekeeper returned HTTP 5xx | Retry later; contact Bespot if persistent |
 | `InvalidResponseError` | Response body was missing required fields | Contact Bespot if persistent |
 | `StorageUnavailable` | Device id could not be saved in the browser | User privacy settings / blocked storage |
@@ -518,7 +518,27 @@ if (result instanceof Error && result.name === 'AuthenticationFailed') {
 2. All four config fields are set and non-empty.
 3. JWT is not expired (get a fresh one from your backend).
 4. Browser can reach `baseUrl` (open DevTools → Network tab).
-5. CORS allows your site's origin on Gatekeeper responses.
+5. CORS allows your site's origin on Gatekeeper responses — if not, see [CORS errors](#cors-errors-in-the-browser).
+
+### CORS errors in the browser
+
+CORS (Cross-Origin Resource Sharing) is enforced by the browser. The SDK calls your Gatekeeper `baseUrl` directly from the user's browser, so that host must respond with headers that allow **your site's origin** (for example `https://mywebapp.mycompany.com`).
+
+**Typical symptoms**
+
+- DevTools → Console: messages such as `blocked by CORS policy`, `No 'Access-Control-Allow-Origin' header`, or failed **preflight** (`OPTIONS`) requests.
+- DevTools → Network: Gatekeeper requests marked as failed before a response body is returned; the SDK may surface `NetworkError` on `initialize` or `check`.
+
+**Gatekeeper `baseUrl` (contact Bespot)**
+
+You cannot allowlist your origin in JavaScript or by changing SDK config. Bespot must enable CORS for your production (and staging) origins on the Gatekeeper environment tied to your `baseUrl`.
+
+If the failing request URL matches your `baseUrl` (e.g. `https://gatekeeper.bespot.dev/v2/...`), contact **Bespot** and include:
+
+- Your site's **origin** as shown in the browser (scheme + host + port, e.g. `https://shop.example.com`)
+- Your `applicationId` and `applicationVersion`
+- The exact CORS message from DevTools (screenshot or copy/paste)
+- Whether the failure happens on `initialize`, `check`, or both
 
 ### `check` returns `InvalidApiKey` or `AuthenticationFailed`
 
