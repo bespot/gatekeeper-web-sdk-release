@@ -9,18 +9,17 @@ This guide explains how to add the Gatekeeper Web SDK to your website. You do **
 3. [SDK package installation](#3-sdk-package-installation)
 4. [Distribution format selection](#4-distribution-format-selection)
 5. [Runtime configuration](#5-runtime-configuration)
-6. [JWT access token requirements](#6-jwt-access-token-requirements)
-7. [Integration sequence](#7-integration-sequence)
-8. [Integration examples](#8-integration-examples)
-9. [API reference](#9-api-reference)
-10. [Error handling](#10-error-handling)
-11. [Geolocation](#11-geolocation)
-12. [Access token rotation](#12-access-token-rotation)
-13. [Common integration mistakes](#13-common-integration-mistakes)
-14. [Troubleshooting](#14-troubleshooting)
-15. [Security](#15-security)
-16. [SDK version upgrades](#16-sdk-version-upgrades)
-17. [Support](#17-support)
+6. [Integration sequence](#6-integration-sequence)
+7. [Integration examples](#7-integration-examples)
+8. [API reference](#8-api-reference)
+9. [Error handling](#9-error-handling)
+10. [Geolocation](#10-geolocation)
+11. [Access token rotation](#11-access-token-rotation)
+12. [Common integration mistakes](#12-common-integration-mistakes)
+13. [Troubleshooting](#13-troubleshooting)
+14. [Security](#14-security)
+15. [SDK version upgrades](#15-sdk-version-upgrades)
+16. [Support](#16-support)
 
 ---
 
@@ -79,7 +78,7 @@ The **API key** (`apiKey` in SDK config) is sent on **Gatekeeper** requests (`x-
 
 - **HTTPS** in production (required for geolocation and device persistence).
 - **CORS**: the Gatekeeper `baseUrl` must accept browser requests from your site's origin.
-- **Geolocation**: the browser may show a permission prompt during checks. If the user denies location, the check can still complete (see [§11](#11-geolocation)).
+- **Geolocation**: the SDK needs browser location permission to obtain the user's position. Tell your users why location is required; if they deny permission, location-dependent checks will not work (see [§10](#10-geolocation)).
 
 ---
 
@@ -189,67 +188,11 @@ If you use Option B with ESM, still set `globalThis.__SAFE_SDK_CONFIG__` in an e
 ### Important notes
 
 - **Do not commit** real API keys or tokens to git. Generate `runtime-config.js` in your deployment pipeline or serve it from a server that injects environment values.
-- The SDK bundle is the **same for every customer**. Nothing is "baked in" at download time.
 - Calling `new SafeSDK(newConfig)` again on the same page **updates** config on the existing singleton instance.
 
 ---
 
-## 6. JWT access token requirements
-
-`initialize()` requires a **JWT** string in the format `header.payload.signature` (three parts separated by dots).
-
-The SDK checks that the string **looks like** a JWT. It does **not** replace your auth server. Gatekeeper validates expiry and claims when you call `initialize` and `check`.
-
-### Correct pattern: your backend issues the token
-
-```text
-Browser  →  GET /api/your-gatekeeper-token  →  Your server
-Your server  →  POST /oauth2/token (with client_secret)  →  Auth server
-Your server  →  returns access_token  →  Browser
-Browser  →  sdk.initialize(access_token)
-```
-
-**Never** put `client_secret` in browser JavaScript.
-
-### Reference: server-side token request (your backend only)
-
-Your server performs this call (integrators implement this on the server, not in the page):
-
-```http
-POST {AUTH_SERVER_URL}/oauth2/token
-Content-Type: application/x-www-form-urlencoded
-Authorization: Basic Base64(client_id:client_secret)
-
-grant_type=client_credentials&scope={SCOPE}
-```
-
-Example response:
-
-```json
-{
-  "access_token": "eyJhbGciOiJIUzI1NiIs...",
-  "expires_in": 86400,
-  "token_type": "Bearer"
-}
-```
-
-| Field | Meaning |
-|-------|---------|
-| `access_token` | JWT string — pass this to `sdk.initialize()` or `sdk.setAccessToken()` |
-| `expires_in` | Token lifetime in **seconds** — schedule refresh before expiry (see [§12](#12-access-token-rotation)) |
-| `token_type` | Always `Bearer` — the SDK sends `Authorization: Bearer {access_token}` on Gatekeeper calls |
-
-Send only `access_token` to the browser. Then:
-
-```js
-await sdk.initialize(access_token)
-```
-
-Full authentication documentation: [Bespot Authentication Guide](https://docs.bespot.com/api/auth).
-
----
-
-## 7. Integration sequence
+## 6. Integration sequence
 
 Follow this sequence **every time** you integrate:
 
@@ -259,7 +202,7 @@ Follow this sequence **every time** you integrate:
 | 2 | `await sdk.initialize(jwt)` | Yes | **Throws** (e.g. `InvalidAccessToken`, `NetworkError`, `AuthenticationFailed`) |
 | 3 | `sdk.setUserId(id)` | No | — |
 | 4 | `await sdk.check()` | When you need a result | **Returns** success object or `Error` (does not throw) |
-| 5 | `sdk.subscribe(ms, callback)` | No | **Throws** only if interval is invalid |
+| 5 | `await sdk.subscribe()` | No | — |
 | 6 | `sdk.unsubscribe()` | When stopping periodic checks | — |
 
 ```text
@@ -271,34 +214,14 @@ setUserId(...)            ← optional
        ↓
 await check()             ← one-time check
        ↓
-subscribe(30000, ...)     ← optional; interval in MILLISECONDS
+await subscribe()         ← optional
        ↓
 unsubscribe()             ← when done
 ```
 
-### What `initialize` does
-
-On first successful `initialize` in a browser profile, the SDK:
-
-1. Sends device information to `POST {baseUrl}/device/{applicationId}/{applicationVersion}/register`
-2. Stores a device id locally for later checks
-3. Caches check definitions from the server
-
-You do **not** call `initialize` again when the JWT expires. Use `setAccessToken` instead ([§12](#12-access-token-rotation)).
-
-### What `check` returns on success
-
-```js
-{
-  action: '...',      // string from Gatekeeper
-  ticket: '...',      // string from Gatekeeper
-  timestamp: 1710000000000  // number, milliseconds since epoch
-}
-```
-
 ---
 
-## 8. Integration examples
+## 7. Integration examples
 
 Replace placeholder URLs and credentials with your real values. Copy-ready files: [../templates/](../templates/).
 
@@ -352,29 +275,8 @@ Replace placeholder URLs and credentials with your real values. Copy-ready files
             timestamp: result.timestamp,
           })
 
-          // Step 5: Periodic checks every 30 seconds (30000 milliseconds)
-          sdk.subscribe(
-            30000,
-            (periodicResult) => {
-              if (periodicResult instanceof Error) {
-                console.error(
-                  '[PERIODIC FAILED]',
-                  periodicResult.name,
-                  '-',
-                  periodicResult.message,
-                )
-                return
-              }
-              console.log('[PERIODIC OK]', {
-                action: periodicResult.action,
-                ticket: periodicResult.ticket,
-              })
-            },
-            (callbackError) => {
-              // Optional: your callback threw or rejected
-              console.error('[CALLBACK ERROR]', callbackError)
-            },
-          )
+          // Step 5: Start periodic checks (interval configured server-side by Bespot)
+          await sdk.subscribe()
 
           // Step 6: Later, when you want to stop:
           // sdk.unsubscribe()
@@ -438,21 +340,7 @@ Replace placeholder URLs and credentials with your real values. Copy-ready files
           ticket: result.ticket,
         })
 
-        sdk.subscribe(30000, function (periodicResult) {
-          if (periodicResult instanceof Error) {
-            console.error(
-              '[PERIODIC FAILED]',
-              periodicResult.name,
-              '-',
-              periodicResult.message,
-            )
-            return
-          }
-          console.log('[PERIODIC OK]', {
-            action: periodicResult.action,
-            ticket: periodicResult.ticket,
-          })
-        })
+        await sdk.subscribe()
       } catch (error) {
         const err = error instanceof Error ? error : new Error(String(error))
         console.error('[INITIALIZE FAILED]', err.name, '-', err.message)
@@ -465,7 +353,7 @@ Replace placeholder URLs and credentials with your real values. Copy-ready files
 
 ---
 
-## 9. API reference
+## 8. API reference
 
 ### Constructor
 
@@ -486,9 +374,9 @@ All four fields are required (non-empty strings) whether passed here or via `glo
 |--------|---------|-------------|
 | `initialize(accessToken: string): Promise<void>` | **Yes** | Validates JWT shape, registers device with Gatekeeper. **Must succeed before `check`.** |
 | `setAccessToken(accessToken: string): void` | **Yes** | Updates JWT **without** re-registering. Use after JWT refresh. Does **not** replace `initialize`. |
-| `setUserId(userId: string): void` | No | Sets `X-UserId` request header on later calls. |
+| `setUserId(userId: string): void` | No | Sets your customer/client related unique user identifier" |
 | `check(): Promise<CheckResult>` | No | Runs one Gatekeeper check. Returns success object or `Error`. |
-| `subscribe(intervalMs, callback?, onPeriodicCallbackError?): Promise<void>` | **Yes** if `intervalMs` is not a positive finite number | Runs `check()` on a timer. **`intervalMs` is milliseconds** (e.g. `30000` = 30 seconds). Pauses while browser tab is hidden. |
+| `subscribe(): Promise<void>` | No | Starts periodic checks on the **server-configured** interval. Pauses while browser tab is hidden. |
 | `unsubscribe(): void` | No | Stops periodic checks and clears timers. |
 
 ### Properties and helpers
@@ -499,27 +387,10 @@ All four fields are required (non-empty strings) whether passed here or via `glo
 | `userId` | Current user id from `setUserId`, or `''` |
 | `isConfigured` | Whether config and session context exist |
 | `result` | Last **successful** `check()` result, or `undefined` |
-| `getLastGeolocationFailure()` | After `check()`, reason geo was empty (see [§11](#11-geolocation)) |
-| `getDeviceSeed(): Promise<string>` | Device fingerprint hash (debugging only) |
-
-### HTTP calls the SDK makes
-
-| When | Request |
-|------|---------|
-| `initialize()` | `POST {baseUrl}/device/{applicationId}/{applicationVersion}/register` |
-| `check()` | `POST {baseUrl}/device/{applicationId}/{applicationVersion}/check` |
-
-Request headers include:
-
-- `x-api-key` — your API key
-- `Authorization: Bearer {jwt}` — access token
-- `X-DeviceId` — after successful register (on check)
-- `X-UserId` — if you called `setUserId`
-- `x-devicelastlocation` — geolocation payload on check
 
 ---
 
-## 10. Error handling
+## 9. Error handling
 
 There are **two different** error behaviors. Mixing them up is the most common integration bug.
 
@@ -548,11 +419,9 @@ if (result instanceof Error) {
 }
 ```
 
-The same applies to the value passed to your `subscribe` callback.
-
 ### Error reference
 
-See [error-reference.md](error-reference.md) for the full catalog, geolocation codes, and legacy name mapping.
+See [error-reference.md](error-reference.md) for the full catalog.
 
 When logging errors, use **`error.name`** and **`error.message`**.
 
@@ -563,7 +432,7 @@ When logging errors, use **`error.name`** and **`error.message`**.
 | `InvalidAccessTokenFormat` | JWT is not `xxx.yyy.zzz` (three non-empty parts) | Fix token format from your auth server |
 | `NotInitialized` | `check()` called before successful `initialize`, or only `setAccessToken` was called | Call `await initialize(jwt)` first |
 | `InvalidApiKey` | Gatekeeper rejected the API key | Verify `apiKey` with Bespot |
-| `AuthenticationFailed` | HTTP 401 from Gatekeeper | JWT expired or invalid — refresh token ([§12](#12-access-token-rotation)) |
+| `AuthenticationFailed` | HTTP 401 from Gatekeeper | JWT expired or invalid — refresh token ([§11](#11-access-token-rotation)) |
 | `AuthorizationFailed` | HTTP 403 from Gatekeeper | JWT or app lacks permission |
 | `GeolocationNotSupported` | Browser has no Geolocation API | Use a supported browser; cannot recover on that client |
 | `NoRecipeFound` | No backend recipe for your app config | Contact Bespot with `applicationId` + `applicationVersion` |
@@ -576,37 +445,19 @@ When logging errors, use **`error.name`** and **`error.message`**.
 
 ---
 
-## 11. Geolocation
+## 10. Geolocation
 
-Each `check()` tries to read the browser location.
+The SDK uses the browser **Geolocation API** to obtain the user's location during checks. The browser will prompt the user for permission when location is requested.
 
-| User / browser situation | Does `check()` still run? | How to detect |
-|--------------------------|---------------------------|---------------|
-| User allows location | Yes, with coordinates | `getLastGeolocationFailure()` returns `null` |
-| User denies permission | **Yes**, with empty location | `geoapi_permission_denied` |
-| Position unavailable | **Yes** | `geoapi_position_unavailable` |
-| Timeout | **Yes** | `geoapi_timeout` |
-| Geolocation API missing | **No** — `check()` returns `GeolocationNotSupported` | `geoapi_unavailable` |
+**Your responsibility:** Explain to your users why location access is needed — before or when your app runs Gatekeeper checks. Clear messaging helps users make an informed choice.
 
-Example:
+**If the user denies permission:** Checks that depend on user location will not work. Plan your UX, permission flow, and fallback behavior accordingly.
 
-```js
-const result = await sdk.check()
-if (result instanceof Error) {
-  // handle check failure
-} else {
-  const geoIssue = sdk.getLastGeolocationFailure()
-  if (geoIssue) {
-    console.warn('Check ran but location was not available:', geoIssue)
-  }
-}
-```
-
-Denied geolocation does **not** stop the check. Only a missing Geolocation API returns a hard failure.
+**Requirements:** Production sites must be served over **HTTPS** (browsers block geolocation on non-secure origins).
 
 ---
 
-## 12. Access token rotation
+## 11. Access token rotation
 
 JWTs expire. After the **first** successful `initialize`, refresh the token with `setAccessToken` — **do not** call `initialize` again just to rotate the JWT.
 
@@ -631,28 +482,25 @@ sdk.setAccessToken(fresh.trim())
 ### Reactive refresh (if a check fails with AuthenticationFailed)
 
 ```js
-sdk.subscribe(60000, async (result) => {
-  if (result instanceof Error && result.name === 'AuthenticationFailed') {
-    const fresh = await fetch('/api/gatekeeper-token').then((r) => r.text())
-    sdk.setAccessToken(fresh.trim())
-    await sdk.check() // optional immediate retry
-    return
-  }
-  // handle success...
-})
+const result = await sdk.check()
+if (result instanceof Error && result.name === 'AuthenticationFailed') {
+  const fresh = await fetch('/api/gatekeeper-token').then((r) => r.text())
+  sdk.setAccessToken(fresh.trim())
+  await sdk.check() // optional immediate retry
+}
 ```
 
 **Note:** If a `check()` is already in flight when you call `setAccessToken`, that request keeps the old token. The new token applies to the **next** call.
 
 ---
 
-## 13. Common integration mistakes
+## 12. Common integration mistakes
 
 | Mistake | What happens | What to do instead |
 |---------|--------------|-------------------|
 | Calling `check()` before `await initialize()` | `NotInitialized` | Always `initialize` first |
 | Using `try/catch` around `check()` only | Missed failures | Use `if (result instanceof Error)` |
-| Passing `30` to `subscribe` expecting 30 seconds | Checks every 30 ms | Pass **milliseconds**: `30000` for 30 seconds |
+| Passing arguments to `subscribe()` | Not supported | Call `subscribe()` with no arguments; interval is configured server-side by Bespot |
 | Using SDK tarball version as `applicationVersion` | `NoRecipeFound` or auth errors | Use the app version registered with Bespot |
 | Trailing slash on `baseUrl` | May cause bad URLs | Use `https://host/v2` not `https://host/v2/` |
 | Putting `client_secret` in frontend | Security risk | Token exchange on your server only |
@@ -662,7 +510,7 @@ sdk.subscribe(60000, async (result) => {
 
 ---
 
-## 14. Troubleshooting
+## 13. Troubleshooting
 
 ### `initialize` throws immediately
 
@@ -687,15 +535,12 @@ sdk.subscribe(60000, async (result) => {
 ### No periodic check results appear
 
 1. `subscribe()` must be called **after** `initialize()` succeeds (wrap `initialize` in `try/catch` and only subscribe in the success path).
-2. Your callback must handle failures with `instanceof Error` — silent callbacks look like “no results”.
-3. Confirm you did not call `unsubscribe()` earlier on the same page.
-4. Confirm `intervalMs` is in **milliseconds** (`30000` for 30 seconds, not `30`).
+2. Confirm you did not call `unsubscribe()` earlier on the same page.
 
 ### Periodic checks seem to stop or slow down
 
 1. The SDK **pauses** the timer while the tab is **hidden** and resumes when visible — this is intentional.
 2. Confirm you did not call `unsubscribe()`.
-3. Confirm `intervalMs` is a positive number in **milliseconds**.
 
 ### `StorageUnavailable` on `initialize`
 
@@ -704,7 +549,7 @@ sdk.subscribe(60000, async (result) => {
 
 ---
 
-## 15. Security
+## 14. Security
 
 - **Never** commit `.env` files, API keys, JWTs, or `client_secret` to source control.
 - **Never** run OAuth client-credentials with `client_secret` in browser code.
@@ -718,7 +563,7 @@ sdk.subscribe(60000, async (result) => {
 
 ---
 
-## 16. SDK version upgrades
+## 15. SDK version upgrades
 
 To upgrade the SDK package:
 
@@ -731,7 +576,7 @@ Upgrading the SDK tarball does **not** change your `applicationVersion` config f
 
 ---
 
-## 17. Support
+## 16. Support
 
 When contacting Bespot support, include:
 

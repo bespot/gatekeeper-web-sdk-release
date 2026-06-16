@@ -33,10 +33,6 @@ if (result instanceof Error) {
 }
 ```
 
-The same applies to the value passed to your `subscribe` callback.
-
-`subscribe()` itself **throws** only when `intervalMs` is not a positive finite number.
-
 ---
 
 ## Error catalog
@@ -50,7 +46,7 @@ When logging errors, use **`error.name`** and **`error.message`**.
 | `InvalidAccessTokenFormat` | JWT is not `xxx.yyy.zzz` (three non-empty parts) | Fix token format from your auth server |
 | `NotInitialized` | `check()` before successful `initialize`, or only `setAccessToken` was called | Call `await initialize(jwt)` first |
 | `InvalidApiKey` | Gatekeeper rejected the API key | Verify `apiKey` with Bespot |
-| `AuthenticationFailed` | HTTP 401 from Gatekeeper | JWT expired or invalid — [access token rotation](integration-guide.md#12-access-token-rotation) |
+| `AuthenticationFailed` | HTTP 401 from Gatekeeper | JWT expired or invalid — [access token rotation](integration-guide.md#11-access-token-rotation) |
 | `AuthorizationFailed` | HTTP 403 from Gatekeeper | JWT or app lacks permission |
 | `GeolocationNotSupported` | Browser has no Geolocation API | Use a supported browser |
 | `NoRecipeFound` | No backend recipe for your app config | Contact Bespot with `applicationId` + `applicationVersion` |
@@ -58,7 +54,7 @@ When logging errors, use **`error.name`** and **`error.message`**.
 | `NetworkError` | Browser could not reach Gatekeeper (`fetch` failed) | Check network, `baseUrl`, CORS, HTTPS |
 | `ServerError` | Gatekeeper returned HTTP 5xx | Retry later; contact Bespot if persistent |
 | `InvalidResponseError` | Response body was missing required fields | Contact Bespot if persistent |
-| `StorageUnavailable` | Device id could not be saved in the browser | User privacy settings / blocked storage |
+| `StorageUnavailable` | Storage unavailability may limit some SDK features | Retry in a normal browser session; ask the user to allow site data if prompted |
 | `UnknownError` | Unclassified failure | Log `error.message`; contact support |
 
 ---
@@ -76,5 +72,5 @@ Geolocation is not always a hard error. After a successful `check()`, use `getLa
 | `geoapi_unknown_error` | Non-standard geolocation error; check still ran |
 | `geoapi_unavailable` | API missing; `check()` returns `GeolocationNotSupported` instead |
 
-See [Geolocation](integration-guide.md#11-geolocation).
+See [Geolocation](integration-guide.md#10-geolocation).
 
