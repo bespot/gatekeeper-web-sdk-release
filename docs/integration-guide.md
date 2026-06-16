@@ -56,10 +56,10 @@ Before writing code, collect these values from Bespot (dashboard or your account
 
 | Name | Used as | Example | Where it goes |
 |------|---------|---------|---------------|
-| **API key** | `apiKey` | `gk_live_abc123...` | Runtime config (browser) |
-| **Application ID** | `applicationId` | `my-web-app` | Runtime config (browser) |
+| **API key** | `apiKey` | `13CTrcYiya9NNnRyd3jXA21CULPPDSqM90sdFnGs` | Runtime config (browser) |
+| **Application ID** | `applicationId` | `mywebapp.mycompany.com` | Runtime config (browser) |
 | **Application version** | `applicationVersion` | `1.0.0` | Runtime config (browser) — **your app release**, not the SDK tarball version |
-| **Gatekeeper base URL** | `baseUrl` | `bespot-base-url` | Runtime config (browser) — **no trailing slash** |
+| **Gatekeeper base URL** | `baseUrl` | `https://gatekeeper.bespot.dev/v2` | Runtime config (browser) — **no trailing slash** |
 | **JWT access token** | argument to `initialize()` | `eyJhbGciOi...` | Fetched at runtime from **your backend** |
 
 ### Backend-only credentials (for JWT issuance — not in the browser)
@@ -152,9 +152,9 @@ The SDK needs **four non-empty strings** before it can talk to Gatekeeper. If an
 
 ```js
 const sdk = new SafeSDK({
-  baseUrl: 'bespot-base-url',
-  apiKey: 'your-api-key',
-  applicationId: 'your-application-id',
+  baseUrl: 'https://gatekeeper.bespot.dev/v2',
+  apiKey: '13CTrcYiya9NNnRyd3jXA21CULPPDSqM90sdFnGs',
+  applicationId: 'mywebapp.mycompany.com',
   applicationVersion: '1.2.0',
 })
 ```
@@ -167,9 +167,9 @@ Load a small script **before** the SDK bundle:
 
 ```js
 globalThis.__SAFE_SDK_CONFIG__ = {
-  baseUrl: 'bespot-base-url',
-  apiKey: 'your-api-key',
-  applicationId: 'your-application-id',
+  baseUrl: 'https://gatekeeper.bespot.dev/v2',
+  apiKey: '13CTrcYiya9NNnRyd3jXA21CULPPDSqM90sdFnGs',
+  applicationId: 'mywebapp.mycompany.com',
   applicationVersion: '1.2.0',
 }
 ```
@@ -316,9 +316,9 @@ Replace placeholder URLs and credentials with your real values. Copy-ready files
       import SafeSDK from '/sdk/safe-sdk.esm.min.js'
 
       const sdk = new SafeSDK({
-        baseUrl: 'bespot-base-url',
-        apiKey: 'your-api-key',
-        applicationId: 'your-application-id',
+        baseUrl: 'https://gatekeeper.bespot.dev/v2',
+        apiKey: '13CTrcYiya9NNnRyd3jXA21CULPPDSqM90sdFnGs',
+        applicationId: 'mywebapp.mycompany.com',
         applicationVersion: '1.0.0',
       })
 
@@ -403,9 +403,9 @@ Replace placeholder URLs and credentials with your real values. Copy-ready files
   <!-- Step 0: Runtime config BEFORE the SDK script -->
   <script>
     globalThis.__SAFE_SDK_CONFIG__ = {
-      baseUrl: 'bespot-base-url',
-      apiKey: 'your-api-key',
-      applicationId: 'your-application-id',
+      baseUrl: 'https://gatekeeper.bespot.dev/v2',
+      apiKey: '13CTrcYiya9NNnRyd3jXA21CULPPDSqM90sdFnGs',
+      applicationId: 'mywebapp.mycompany.com',
       applicationVersion: '1.0.0',
     }
   </script>
