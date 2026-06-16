@@ -143,9 +143,9 @@ The SDK needs **four non-empty strings** before it can talk to Gatekeeper. If an
 
 | Field | Description |
 |-------|-------------|
-| `baseUrl` | Gatekeeper API root (no `/` at the end) |
-| `apiKey` | Your Bespot API key |
-| `applicationId` | Your site domain name - treated as application identifier in Bespot |
+| `baseUrl` | Gatekeeper API root (no `/` at the end) (e.g. `https://gatekeeper.bespot.dev/v2`) |
+| `apiKey` | Your Bespot API key (e.g. `13CTrcYiya9NNnRyd3jXA21CULPPDSqM90sdFnGs`) |
+| `applicationId` | Your site domain name - treated as application identifier in Bespot (e.g. `mywebapp.mycompany.com`) |
 | `applicationVersion` | Your application's release label in Bespot (e.g. `1.0.0`) |
 
 ### Option A — pass config to the constructor (recommended)

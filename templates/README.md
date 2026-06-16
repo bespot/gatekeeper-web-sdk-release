@@ -19,8 +19,8 @@ Starter files for Gatekeeper Web SDK integration. Copy into your project and rep
 | [integration-umd.html](integration-umd.html) | Classic script tags + `window.SafeSDK` |
 | [runtime-config.example.js](runtime-config.example.js) | `globalThis.__SAFE_SDK_CONFIG__` sample for UMD |
 
-## Placeholders to replace
+## Values to update
 
-- `your-api-key`, `your-application-id`, `your-application-version`, `bespot-base-url`
+- `apiKey`, `applicationId`, `applicationVersion`, `baseUrl` (replace the sample values with yours)
 - `/api/gatekeeper-token` — your backend JWT endpoint
 - `/sdk/safe-sdk.*.min.js` — path to hosted bundles after extract
