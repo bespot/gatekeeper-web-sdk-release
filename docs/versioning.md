@@ -8,10 +8,10 @@ How SDK package versions relate to your application configuration.
 
 | Term | Example | What it is |
 |------|---------|------------|
-| **SDK package version** | `1.0.0` in `gatekeeper-web-sdk-1.0.0.tgz` | Version of the JavaScript bundle in `packages/` |
+| **SDK package version** | `1.0.0` in `@bespot/gatekeeper-web-sdk@1.0.0` | Version of the JavaScript bundle published in this repository |
 | **Application version** | `1.0.0` in `SafeSDK` config | Your app identity in Gatekeeper API URL paths |
 
-They are **independent**. Upgrading the SDK tarball does not change your `applicationVersion` unless you choose to update it in Bespot and in your config.
+They are **independent**. Upgrading the SDK does not change your `applicationVersion` unless you choose to update it in Bespot and in your config.
 
 ---
 
@@ -43,12 +43,11 @@ Filenames are always `safe-sdk.*` — not `gatekeeper.*`.
    - `await initialize(jwt)`
    - `await check()`
    - `subscribe` / `unsubscribe` if used
-4. Deploy to production after checks pass.
-5. Keep the previous `.tgz` until all environments have migrated.
+3. Deploy to production after checks pass.
 
 ---
 
 ## Upstream source
 
-SDK packages are built from [github.com/bespot/gatekeeper-web-sdk](https://github.com/bespot/gatekeeper-web-sdk). Each GitHub Release tag `vX.Y.Z` produces `gatekeeper-web-sdk-X.Y.Z.tgz`.
+SDK bundles are built from [github.com/bespot/gatekeeper-web-sdk](https://github.com/bespot/gatekeeper-web-sdk). Each release tag `vX.Y.Z` publishes `safe-sdk.esm.min.js` and `safe-sdk.umd.min.js` to [GitHub Releases](https://github.com/bespot/gatekeeper-web-sdk-release/releases) and to npm as `@bespot/gatekeeper-web-sdk@X.Y.Z`.
 
