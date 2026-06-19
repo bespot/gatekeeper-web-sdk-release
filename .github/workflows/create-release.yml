@@ -1,0 +1,66 @@
+name: Create Release
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+jobs:
+  create-release:
+    name: Create GitHub Release
+    if: >-
+      github.event.pull_request.merged == true &&
+      startsWith(github.event.pull_request.head.ref, 'release/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Extract tag from branch
+        id: meta
+        env:
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          tag="${BRANCH#release/}"
+          version="${tag#v}"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+        shell: bash
+
+      - name: Extract changelog entry
+        id: notes
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          set -euo pipefail
+          python3 << 'PY'
+          import re, os
+          content = open('CHANGELOG.md').read()
+          version = os.environ['VERSION']
+          pattern = rf'## \[{re.escape(version)}\].*?(?=\n## \[|\Z)'
+          match = re.search(pattern, content, re.DOTALL)
+          body = match.group(0).strip() if match else f'## [{version}]'
+          body = re.sub(r'\n+---\s*$', '', body).strip()
+          with open('/tmp/release-notes.md', 'w') as f:
+              f.write(body)
+          PY
+        shell: bash
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.meta.outputs.tag }}
+        run: |
+          set -euo pipefail
+          gh release create "${TAG}" \
+            --title "${TAG}" \
+            --notes-file /tmp/release-notes.md \
+            --verify-tag
+        shell: bash
