@@ -1,13 +1,25 @@
 # Changelog
 
-## [1.0.0] — 2026-06-10
+All notable changes to the distributed Gatekeeper Web SDK packages in this repository.
 
-### Features
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-- Agnostic SDK artifacts — runtime config supplied at serve time; credentials never baked into the bundle
-- `setAccessToken(jwt)` — rotate the JWT after first `initialize` without re-registering the device
-- `subscribe()` / `unsubscribe()` — periodic checks driven by server-configured interval
-- Unified `Failure.*` error classes for all failure modes
-- Fetch timeout with `AbortController` (30 s); request never hangs indefinitely
-- Storage isolation — localStorage, sessionStorage, cookie, and IndexedDB written independently; any single backend failure does not block the others
-- Geolocation timeout (10 s) with 60-second in-memory position cache
+## [1.0.0] - 2026-06-10
+
+**Upstream release:** [v1.0.0](https://github.com/bespot/gatekeeper-web-sdk/releases/tag/v1.0.0)
+
+### Added
+
+- `setAccessToken` API — rotate the JWT after first `initialize` without re-registering the device
+- Structured error types with stable `error.name` values
+- `StorageUnavailable` error
+- `getLastGeolocationFailure()` helper
+- Fetch timeout with `AbortController` (30 s); requests never hang indefinitely
+- Storage isolation — localStorage, sessionStorage, cookie, and IndexedDB written independently
+
+### Changed
+
+- Runtime configuration is supplied by the host application at serve time; credentials never baked into the bundle
+- Storage handling hardened for restricted browser environments
+- Breaking: Runtime config requires `baseUrl`, `apiKey`, `applicationId`, and `applicationVersion`
+- Breaking: Bundle filenames are `safe-sdk.esm.min.js` and `safe-sdk.umd.min.js`

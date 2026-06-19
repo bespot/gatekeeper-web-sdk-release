@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gatekeeper SDK — ESM template</title>
+  </head>
+  <body>
+    <h1>Gatekeeper SDK (ESM)</h1>
+    <p>Open the browser console for SDK output.</p>
+
+    <!--
+      Prerequisites:
+      1. Download safe-sdk.esm.min.js from GitHub Releases and host it
+      2. OR: npm install @bespot/gatekeeper-web-sdk and use your bundler
+      3. Implement GET /api/gatekeeper-token on your backend
+    -->
+    <script type="module">
+      import SafeSDK from './sdk/safe-sdk.esm.min.js'
+
+      const sdk = new SafeSDK({
+        baseUrl: 'https://gatekeeper.bespot.dev/v2',
+        apiKey: '13CTrcYiya9NNnRyd3jXA21CULPPDSqM90sdFnGs',
+        applicationId: 'mywebapp.mycompany.com',
+        applicationVersion: '1.0.0',
+      })
+
+      async function startGatekeeper() {
+        try {
+          const response = await fetch('/api/gatekeeper-token')
+          if (!response.ok) {
+            throw new Error('Could not fetch Gatekeeper token from backend')
+          }
+          const jwt = (await response.text()).trim()
+          if (!jwt) {
+            throw new Error('Backend returned an empty token')
+          }
+
+          await sdk.initialize(jwt)
+
+          sdk.setUserId('client-user-123')
+
+          const result = await sdk.check()
+          if (result instanceof Error) {
+            console.error('[CHECK FAILED]', result.name, '-', result.message)
+            return
+          }
+          console.log('[CHECK OK]', {
+            action: result.action,
+            ticket: result.ticket,
+            timestamp: result.timestamp,
+          })
+
+          // Start periodic checks — interval configured server-side by Bespot
+          await sdk.subscribe()
+          // After each periodic check, read the latest result:
+          // sdk.lastCheckResult — CheckResult on success, Failure on error
+
+          // Stop periodic checks when done:
+          // sdk.unsubscribe()
+        } catch (error) {
+          const err = error instanceof Error ? error : new Error(String(error))
+          console.error('[INITIALIZE FAILED]', err.name, '-', err.message)
+        }
+      }
+
+      startGatekeeper()
+    </script>
+  </body>
+</html>
