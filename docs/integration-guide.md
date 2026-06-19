@@ -84,42 +84,31 @@ The **API key** (`apiKey` in SDK config) is sent on **Gatekeeper** requests (`x-
 
 ## 3. SDK package installation
 
-### Where to download
-
-Get a versioned package from this repository under `packages/`:
-
-```text
-gatekeeper-web-sdk-{version}.tgz
-```
-
-Example: `gatekeeper-web-sdk-1.0.0.tgz`
-
-### Extract the package
+### Option A — npm (recommended for module bundlers)
 
 ```bash
-tar -xzf gatekeeper-web-sdk-1.0.0.tgz
+npm install @bespot/gatekeeper-web-sdk
 ```
 
-After extraction you will have **exactly this layout**:
-
-```text
-sdk/
-  safe-sdk.esm.min.js
-  safe-sdk.umd.min.js
+```js
+import SafeSDK from '@bespot/gatekeeper-web-sdk'
 ```
 
-These are the only files you need from the package.
+### Option B — CDN / self-hosted (no build step)
 
-### Host the files
+Download the latest versioned bundles from [GitHub Releases](https://github.com/bespot/gatekeeper-web-sdk-release/releases):
 
-Copy the `sdk/` folder (or its contents) to your CDN or web server, for example:
+- `safe-sdk.esm.min.js` — ES module format
+- `safe-sdk.umd.min.js` — UMD format (classic script tags)
+
+Copy the downloaded file(s) to your CDN or web server, for example:
 
 ```text
 https://your-cdn.example.com/sdk/safe-sdk.esm.min.js
 https://your-cdn.example.com/sdk/safe-sdk.umd.min.js
 ```
 
-Use the URL paths in your HTML or bundler imports. The filenames are always `safe-sdk.esm.min.js` and `safe-sdk.umd.min.js` — not `gatekeeper.*`.
+The filenames are always `safe-sdk.esm.min.js` and `safe-sdk.umd.min.js`.
 
 ---
 
@@ -585,14 +574,19 @@ If the failing request URL matches your `baseUrl` (e.g. `https://gatekeeper.besp
 
 ## 15. SDK version upgrades
 
-To upgrade the SDK package:
+To upgrade the SDK:
 
-1. Download the newer `gatekeeper-web-sdk-X.Y.Z.tgz`.
-2. Extract and replace hosted `sdk/safe-sdk.*.min.js` files (or pin a new CDN path).
-3. Re-test `initialize` → `check` → `subscribe` in staging.
-4. Read the changelog for that release before deploying to production.
+**npm:** `npm install @bespot/gatekeeper-web-sdk@latest`
 
-Upgrading the SDK tarball does **not** change your `applicationVersion` config field unless **you** choose to.
+**CDN / self-hosted:**
+1. Download the newer bundles from [GitHub Releases](https://github.com/bespot/gatekeeper-web-sdk-release/releases).
+2. Replace the hosted `safe-sdk.esm.min.js` and/or `safe-sdk.umd.min.js` files.
+
+After upgrading either way:
+1. Re-test `initialize` → `check` → `subscribe` in staging.
+2. Read [CHANGELOG](../CHANGELOG.md) for that release before deploying to production.
+
+Upgrading the SDK does **not** change your `applicationVersion` config field unless **you** choose to.
 
 ---
 

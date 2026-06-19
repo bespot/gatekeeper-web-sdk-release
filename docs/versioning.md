@@ -15,31 +15,30 @@ They are **independent**. Upgrading the SDK tarball does not change your `applic
 
 ---
 
-## Package naming and layout
+## Bundle naming
 
 | Item | Value |
 |------|-------|
-| Archive | `packages/gatekeeper-web-sdk-{semver}.tgz` |
-| Extract command | `tar -xzf packages/gatekeeper-web-sdk-{semver}.tgz` |
-| Bundles | `sdk/safe-sdk.esm.min.js`, `sdk/safe-sdk.umd.min.js` |
+| npm package | `@bespot/gatekeeper-web-sdk` |
+| GitHub Releases | `https://github.com/bespot/gatekeeper-web-sdk-release/releases` |
+| Bundle filenames | `safe-sdk.esm.min.js`, `safe-sdk.umd.min.js` |
 
-Filenames inside the archive are always `safe-sdk.*` — not `gatekeeper.*` or `dist/`.
+Filenames are always `safe-sdk.*` — not `gatekeeper.*`.
 
 ---
 
 ## Selecting a version
 
-1. Use the **Current** row in the [README version table](../README.md#available-sdk-versions).
-2. Pin a specific `.tgz` in production rather than always tracking latest.
+1. Check [GitHub Releases](https://github.com/bespot/gatekeeper-web-sdk-release/releases) for the latest version.
+2. Pin a specific version in production rather than always tracking latest.
 3. Read [CHANGELOG](../CHANGELOG.md) before upgrading.
 
 ---
 
 ## Upgrade procedure
 
-1. Download the newer `gatekeeper-web-sdk-X.Y.Z.tgz` into `packages/` (or replace your hosted extract).
-2. Extract and deploy `sdk/safe-sdk.esm.min.js` and/or `sdk/safe-sdk.umd.min.js`.
-3. In staging, re-test:
+1. Run `npm install @bespot/gatekeeper-web-sdk@latest` **or** download newer bundles from [GitHub Releases](https://github.com/bespot/gatekeeper-web-sdk-release/releases) and replace your hosted files.
+2. In staging, re-test:
    - `new SafeSDK(config)` with all four runtime fields
    - `await initialize(jwt)`
    - `await check()`

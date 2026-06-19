@@ -11,8 +11,8 @@
 
     <!--
       Prerequisites:
-      1. tar -xzf packages/gatekeeper-web-sdk-1.0.0.tgz
-      2. Serve sdk/safe-sdk.esm.min.js from your web root (path below)
+      1. Download safe-sdk.esm.min.js from GitHub Releases and host it
+      2. OR: npm install @bespot/gatekeeper-web-sdk and use your bundler
       3. Implement GET /api/gatekeeper-token on your backend
     -->
     <script type="module">
@@ -51,28 +51,12 @@
             timestamp: result.timestamp,
           })
 
-          sdk.subscribe(
-            30000,
-            (periodicResult) => {
-              if (periodicResult instanceof Error) {
-                console.error(
-                  '[PERIODIC FAILED]',
-                  periodicResult.name,
-                  '-',
-                  periodicResult.message,
-                )
-                return
-              }
-              console.log('[PERIODIC OK]', {
-                action: periodicResult.action,
-                ticket: periodicResult.ticket,
-              })
-            },
-            (callbackError) => {
-              console.error('[CALLBACK ERROR]', callbackError)
-            },
-          )
+          // Start periodic checks — interval configured server-side by Bespot
+          await sdk.subscribe()
+          // After each periodic check, read the latest result:
+          // sdk.lastCheckResult — CheckResult on success, Failure on error
 
+          // Stop periodic checks when done:
           // sdk.unsubscribe()
         } catch (error) {
           const err = error instanceof Error ? error : new Error(String(error))

@@ -1,40 +1,17 @@
 # SDK packages
 
-This directory stores versioned Gatekeeper Web SDK tarballs.
+SDK bundles are distributed via two channels:
 
-## Naming
-
-```text
-gatekeeper-web-sdk-{semver}.tgz
-```
-
-Example: `gatekeeper-web-sdk-1.0.0.tgz`
-
-## Verify a tarball
+## npm
 
 ```bash
-tar -tzf gatekeeper-web-sdk-1.0.0.tgz
+npm install @bespot/gatekeeper-web-sdk
 ```
 
-Expected output:
+## GitHub Releases
 
-```text
-sdk/
-sdk/safe-sdk.esm.min.js
-sdk/safe-sdk.umd.min.js
-```
+Download versioned bundles (`safe-sdk.esm.min.js`, `safe-sdk.umd.min.js`) from:
 
-## Checksums (optional)
+https://github.com/bespot/gatekeeper-web-sdk-release/releases
 
-After adding packages, regenerate checksums:
-
-```bash
-cd packages
-shasum -a 256 gatekeeper-web-sdk-*.tgz > SHA256SUMS
-```
-
-Integrators can verify downloads with:
-
-```bash
-shasum -a 256 -c SHA256SUMS
-```
+Each release includes both ESM and UMD builds. No extraction step required — download and host directly.
