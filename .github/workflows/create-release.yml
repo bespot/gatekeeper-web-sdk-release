@@ -53,14 +53,20 @@ jobs:
           PY
         shell: bash
 
-      - name: Create GitHub Release
+      - name: Create or update GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ steps.meta.outputs.tag }}
         run: |
           set -euo pipefail
-          gh release create "${TAG}" \
-            --title "${TAG}" \
-            --notes-file /tmp/release-notes.md \
-            --verify-tag
+          if gh release view "${TAG}" &>/dev/null; then
+            gh release edit "${TAG}" \
+              --title "${TAG}" \
+              --notes-file /tmp/release-notes.md
+          else
+            gh release create "${TAG}" \
+              --title "${TAG}" \
+              --notes-file /tmp/release-notes.md \
+              --verify-tag
+          fi
         shell: bash
