@@ -18,6 +18,7 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: write
+      id-token: write
 
     steps:
       - name: Checkout main
@@ -81,18 +82,13 @@ jobs:
 
       - name: Publish to npm
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           VERSION: ${{ steps.meta.outputs.version }}
         run: |
           set -euo pipefail
-          if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
-            echo "::notice::NPM_TOKEN not set; skipping npm publish."
-            exit 0
-          fi
           npm_version="$(npm view "@bespot/gatekeeper-web-sdk@${VERSION}" version 2>/dev/null || true)"
           if [ -n "${npm_version}" ]; then
             echo "::warning::@bespot/gatekeeper-web-sdk@${VERSION} already on npm; skipping."
             exit 0
           fi
-          npm publish --access public
+          npm publish --provenance --access public
         shell: bash
