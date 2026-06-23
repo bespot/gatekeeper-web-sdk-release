@@ -16,6 +16,9 @@ jobs:
       startsWith(github.event.pull_request.head.ref, 'release/')
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    concurrency:
+      group: release-${{ github.event.pull_request.head.ref }}
+      cancel-in-progress: false
     permissions:
       contents: write
       id-token: write
@@ -32,10 +35,34 @@ jobs:
           BRANCH: ${{ github.event.pull_request.head.ref }}
         run: |
           set -euo pipefail
+          if ! [[ "${BRANCH}" =~ ^release/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Branch '${BRANCH}' does not match release/vX.Y.Z convention."
+            exit 1
+          fi
           tag="${BRANCH#release/}"
           version="${tag#v}"
           echo "tag=${tag}" >> "$GITHUB_OUTPUT"
           echo "version=${version}" >> "$GITHUB_OUTPUT"
+        shell: bash
+
+      - name: Validate release artifacts
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          pkg_version="$(node -p "require('./package.json').version")"
+          if [ "${pkg_version}" != "${VERSION}" ]; then
+            echo "::error::package.json version (${pkg_version}) does not match release tag (${VERSION})."
+            exit 1
+          fi
+
+          for f in dist/safe-sdk.esm.min.js dist/safe-sdk.umd.min.js; do
+            if [ ! -s "${f}" ]; then
+              echo "::error::${f} is missing or empty."
+              exit 1
+            fi
+          done
         shell: bash
 
       - name: Extract changelog entry
@@ -45,33 +72,28 @@ jobs:
         run: |
           set -euo pipefail
           python3 << 'PY'
-          import re, os
+          import re, os, sys
           content = open('CHANGELOG.md').read()
           version = os.environ['VERSION']
           pattern = rf'## \[{re.escape(version)}\].*?(?=\n## \[|\Z)'
           match = re.search(pattern, content, re.DOTALL)
-          body = match.group(0).strip() if match else f'## [{version}]'
+          if not match:
+              print(f'::error::No CHANGELOG.md section found for [{version}]. Fill it in before merging.', file=sys.stderr)
+              sys.exit(1)
+          body = match.group(0).strip()
           body = re.sub(r'\n+---\s*$', '', body).strip()
+          content_lines = [
+              l for l in body.splitlines()
+              if l.strip()
+              and not l.startswith('#')
+              and not l.startswith('**Upstream release:')
+          ]
+          if not content_lines:
+              print(f'::error::CHANGELOG.md section for [{version}] has no content. Fill it in before merging.', file=sys.stderr)
+              sys.exit(1)
           with open('/tmp/release-notes.md', 'w') as f:
               f.write(body)
           PY
-        shell: bash
-
-      - name: Create or update GitHub Release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ steps.meta.outputs.tag }}
-        run: |
-          set -euo pipefail
-          if gh release view "${TAG}" &>/dev/null; then
-            gh release edit "${TAG}" \
-              --title "${TAG}" \
-              --notes-file /tmp/release-notes.md
-          else
-            gh release create "${TAG}" \
-              --title "${TAG}" \
-              --notes-file /tmp/release-notes.md
-          fi
         shell: bash
 
       - name: Set up Node.js
@@ -88,7 +110,31 @@ jobs:
           npm_version="$(npm view "@bespot/gatekeeper-web-sdk@${VERSION}" version 2>/dev/null || true)"
           if [ -n "${npm_version}" ]; then
             echo "::warning::@bespot/gatekeeper-web-sdk@${VERSION} already on npm; skipping."
-            exit 0
+          else
+            npm publish --provenance --access public
+            echo "Published @bespot/gatekeeper-web-sdk@${VERSION} to npm."
           fi
-          npm publish --provenance --access public
+        shell: bash
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.meta.outputs.tag }}
+        run: |
+          set -euo pipefail
+          if gh release view "${TAG}" &>/dev/null; then
+            gh release edit "${TAG}" \
+              --title "${TAG}" \
+              --notes-file /tmp/release-notes.md
+            gh release upload "${TAG}" \
+              dist/safe-sdk.esm.min.js \
+              dist/safe-sdk.umd.min.js \
+              --clobber
+          else
+            gh release create "${TAG}" \
+              --title "${TAG}" \
+              --notes-file /tmp/release-notes.md \
+              dist/safe-sdk.esm.min.js \
+              dist/safe-sdk.umd.min.js
+          fi
         shell: bash
