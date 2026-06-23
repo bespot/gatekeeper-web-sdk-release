@@ -15,13 +15,13 @@ jobs:
       github.event.pull_request.merged == true &&
       startsWith(github.event.pull_request.head.ref, 'release/')
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     permissions:
       contents: write
 
     steps:
       - name: Checkout main
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: main
 
@@ -69,7 +69,30 @@ jobs:
           else
             gh release create "${TAG}" \
               --title "${TAG}" \
-              --notes-file /tmp/release-notes.md \
-              --verify-tag
+              --notes-file /tmp/release-notes.md
           fi
+        shell: bash
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Publish to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          set -euo pipefail
+          if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
+            echo "::notice::NPM_TOKEN not set; skipping npm publish."
+            exit 0
+          fi
+          npm_version="$(npm view "@bespot/gatekeeper-web-sdk@${VERSION}" version 2>/dev/null || true)"
+          if [ -n "${npm_version}" ]; then
+            echo "::warning::@bespot/gatekeeper-web-sdk@${VERSION} already on npm; skipping."
+            exit 0
+          fi
+          npm publish --access public
         shell: bash
