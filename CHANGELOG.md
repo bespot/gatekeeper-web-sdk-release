@@ -4,6 +4,20 @@ All notable changes to the distributed Gatekeeper Web SDK packages in this repos
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-06-24
+
+**Upstream release:** [v1.0.1](https://github.com/bespot/gatekeeper-web-sdk/releases/tag/v1.0.1)
+
+### Added
+
+### Changed
+
+### Fixed
+
+### Removed
+
+---
+
 ## [1.0.0] - 2026-06-22 11:27 UTC
 
 **Upstream release:** [v1.0.0](https://github.com/bespot/gatekeeper-web-sdk/releases/tag/v1.0.0)
