@@ -122,6 +122,7 @@ jobs:
           TAG: ${{ steps.meta.outputs.tag }}
         run: |
           set -euo pipefail
+          sha256sum dist/safe-sdk.esm.min.js dist/safe-sdk.umd.min.js > SHA256SUMS
           if gh release view "${TAG}" &>/dev/null; then
             gh release edit "${TAG}" \
               --title "${TAG}" \
@@ -129,12 +130,14 @@ jobs:
             gh release upload "${TAG}" \
               dist/safe-sdk.esm.min.js \
               dist/safe-sdk.umd.min.js \
+              SHA256SUMS \
               --clobber
           else
             gh release create "${TAG}" \
               --title "${TAG}" \
               --notes-file /tmp/release-notes.md \
               dist/safe-sdk.esm.min.js \
-              dist/safe-sdk.umd.min.js
+              dist/safe-sdk.umd.min.js \
+              SHA256SUMS
           fi
         shell: bash
