@@ -45,10 +45,10 @@
             ticket: result.ticket,
           })
 
-          // Start periodic checks — interval configured server-side by Bespot
+          // Start periodic checks — interval from server configuration (see integration guide)
           await sdk.subscribe()
           // After each periodic check, read the latest result:
-          // sdk.lastCheckResult — CheckResult on success, Failure on error
+          // sdk.lastCheckResult — check result object on success, Error subclass on failure
 
           // sdk.unsubscribe()
         } catch (error) {

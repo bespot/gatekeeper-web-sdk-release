@@ -1,33 +1,33 @@
-name: Create Release
+name: Validate Release
 
 on:
   pull_request:
-    types: [closed]
-    branches: [main]
+    types:
+      - opened
+      - edited
+      - synchronize
+      - reopened
+    branches:
+      - main
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  create-release:
-    name: Create GitHub Release
-    if: >-
-      github.event.pull_request.merged == true &&
-      startsWith(github.event.pull_request.head.ref, 'release/')
+  validate:
+    name: Validate Release PR
+    if: startsWith(github.event.pull_request.head.ref, 'release/')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     concurrency:
-      group: release-${{ github.event.pull_request.head.ref }}
-      cancel-in-progress: false
+      group: validate-${{ github.event.pull_request.head.ref }}
+      cancel-in-progress: true
     permissions:
-      contents: write
-      id-token: write
+      contents: read
 
     steps:
-      - name: Checkout merge commit
+      - name: Checkout PR branch
         uses: actions/checkout@v6
-        with:
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
 
       - name: Extract tag from branch
         id: meta
@@ -70,8 +70,7 @@ jobs:
           fi
         shell: bash
 
-      - name: Extract changelog entry
-        id: notes
+      - name: Validate changelog entry
         env:
           VERSION: ${{ steps.meta.outputs.version }}
         run: |
@@ -96,8 +95,6 @@ jobs:
           if not content_lines:
               print(f'::error::CHANGELOG.md section for [{version}] has no content. Fill it in before merging.', file=sys.stderr)
               sys.exit(1)
-          with open('/tmp/release-notes.md', 'w') as f:
-              f.write(body)
           PY
         shell: bash
 
@@ -105,44 +102,9 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: '24'
-          registry-url: 'https://registry.npmjs.org'
 
-      - name: Publish to npm
-        env:
-          VERSION: ${{ steps.meta.outputs.version }}
+      - name: Validate npm package contents
         run: |
           set -euo pipefail
-          npm_version="$(npm view "@bespot/gatekeeper-web-sdk@${VERSION}" version 2>/dev/null || true)"
-          if [ -n "${npm_version}" ]; then
-            echo "::warning::@bespot/gatekeeper-web-sdk@${VERSION} already on npm; skipping."
-          else
-            npm publish --provenance --access public
-            echo "Published @bespot/gatekeeper-web-sdk@${VERSION} to npm."
-          fi
-        shell: bash
-
-      - name: Create or update GitHub Release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ steps.meta.outputs.tag }}
-        run: |
-          set -euo pipefail
-          sha256sum dist/safe-sdk.esm.min.js dist/safe-sdk.umd.min.js > SHA256SUMS
-          if gh release view "${TAG}" &>/dev/null; then
-            gh release edit "${TAG}" \
-              --title "${TAG}" \
-              --notes-file /tmp/release-notes.md
-            gh release upload "${TAG}" \
-              dist/safe-sdk.esm.min.js \
-              dist/safe-sdk.umd.min.js \
-              SHA256SUMS \
-              --clobber
-          else
-            gh release create "${TAG}" \
-              --title "${TAG}" \
-              --notes-file /tmp/release-notes.md \
-              dist/safe-sdk.esm.min.js \
-              dist/safe-sdk.umd.min.js \
-              SHA256SUMS
-          fi
+          npm pack --dry-run
         shell: bash

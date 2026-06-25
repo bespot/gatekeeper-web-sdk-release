@@ -4,6 +4,13 @@ JWT access tokens and OAuth for the Gatekeeper Web SDK.
 
 ---
 
+## Official reference
+
+- [Bespot Docs](https://docs.bespot.com) — Bespot product documentation
+- [Bespot Authentication Guide](https://docs.bespot.com/api/auth) — Bespot authentication API
+
+---
+
 ## Credential types
 
 ### Browser runtime config (Gatekeeper API)
@@ -15,7 +22,7 @@ Set on every page before or when constructing `SafeSDK`:
 | `apiKey` | `x-api-key` on Gatekeeper requests |
 | `applicationId` | URL path segment |
 | `applicationVersion` | URL path segment |
-| `baseUrl` | Gatekeeper API root |
+| `baseUrl` | Gatekeeper API root (no `/` at the end), e.g. `https://gatekeeper.example.com` |
 
 See [Runtime configuration](integration-guide.md#5-runtime-configuration).
 
@@ -122,9 +129,3 @@ const fresh = await fetch('/api/gatekeeper-token').then((r) => r.text())
 sdk.setAccessToken(fresh.trim())
 await sdk.check() // optional immediate retry
 ```
-
----
-
-## Official reference
-
-[Bespot Authentication Guide](https://docs.bespot.com/api/auth)

@@ -51,14 +51,20 @@ The SDK is a **single class** named `SafeSDK`. It is a **singleton**: every `new
 
 ## 2. Bespot prerequisites
 
-Before writing code, collect these values from Bespot (dashboard or your account team):
+Before writing code, sign in at **[gatekeeper.bespot.com](https://gatekeeper.bespot.com)** to create your account and obtain credentials. 
+Platform documentation is at **[docs.bespot.com](https://docs.bespot.com)**.
+
+Bespot provides your Gatekeeper API `baseUrl` when you register (for example `https://gatekeeper.example.com`). 
+It is the API host, not the [gatekeeper.bespot.com](https://gatekeeper.bespot.com) sign-in portal.
+
+Collect these values:
 
 | Name | Used as | Example | Where it goes |
 |------|---------|---------|---------------|
 | **API key** | `apiKey` | `13CTrcYiya9NNnRyd3jXA21CULPPDSqM90sdFnGs` | Runtime config (browser) |
 | **Application ID** | `applicationId` | `mywebapp.mycompany.com` | Runtime config (browser) |
 | **Application version** | `applicationVersion` | `1.0.0` | Runtime config (browser) — **your app release**, not the SDK tarball version |
-| **Gatekeeper base URL** | `baseUrl` | `https://gatekeeper.bespot.dev/v2` | Runtime config (browser) — **no trailing slash** |
+| **Gatekeeper base URL** | `baseUrl` | `https://gatekeeper.example.com` | Runtime config (browser)|
 | **JWT access token** | argument to `initialize()` | `eyJhbGciOi...` | Fetched at runtime from **your backend** |
 
 ### Backend-only credentials (for JWT issuance — not in the browser)
@@ -131,7 +137,7 @@ The SDK needs **four non-empty strings** before it can talk to Gatekeeper. If an
 
 | Field | Description |
 |-------|-------------|
-| `baseUrl` | Gatekeeper API root (no `/` at the end) (e.g. `https://gatekeeper.bespot.dev/v2`) |
+| `baseUrl` | Gatekeeper API root (no `/` at the end) (e.g. `https://gatekeeper.example.com`) |
 | `apiKey` | Your Bespot API key (e.g. `13CTrcYiya9NNnRyd3jXA21CULPPDSqM90sdFnGs`) |
 | `applicationId` | Your site domain name - treated as application identifier in Bespot (e.g. `mywebapp.mycompany.com`) |
 | `applicationVersion` | Your application's release label in Bespot (e.g. `1.0.0`) |
@@ -140,7 +146,7 @@ The SDK needs **four non-empty strings** before it can talk to Gatekeeper. If an
 
 ```js
 const sdk = new SafeSDK({
-  baseUrl: 'https://gatekeeper.bespot.dev/v2',
+  baseUrl: 'https://gatekeeper.example.com',
   apiKey: '13CTrcYiya9NNnRyd3jXA21CULPPDSqM90sdFnGs',
   applicationId: 'mywebapp.mycompany.com',
   applicationVersion: '1.2.0',
@@ -155,7 +161,7 @@ Load a small script **before** the SDK bundle:
 
 ```js
 globalThis.__SAFE_SDK_CONFIG__ = {
-  baseUrl: 'https://gatekeeper.bespot.dev/v2',
+  baseUrl: 'https://gatekeeper.example.com',
   apiKey: '13CTrcYiya9NNnRyd3jXA21CULPPDSqM90sdFnGs',
   applicationId: 'mywebapp.mycompany.com',
   applicationVersion: '1.2.0',
@@ -191,7 +197,7 @@ Follow this sequence **every time** you integrate:
 | 2 | `await sdk.initialize(jwt)` | Yes | **Throws** (e.g. `InvalidAccessToken`, `NetworkError`, `AuthenticationFailed`) |
 | 3 | `sdk.setUserId(id)` | No | — |
 | 4 | `await sdk.check()` | When you need a result | **Returns** success object or `Error` (does not throw) |
-| 5 | `await sdk.subscribe()` | No | — |
+| 5 | `await sdk.subscribe()` | No | Interval from [server configuration](#periodic-checks) |
 | 6 | `sdk.unsubscribe()` | When stopping periodic checks | — |
 
 ```text
@@ -228,7 +234,7 @@ Replace placeholder URLs and credentials with your real values. Copy-ready files
       import SafeSDK from '/sdk/safe-sdk.esm.min.js'
 
       const sdk = new SafeSDK({
-        baseUrl: 'https://gatekeeper.bespot.dev/v2',
+        baseUrl: 'https://gatekeeper.example.com',
         apiKey: '13CTrcYiya9NNnRyd3jXA21CULPPDSqM90sdFnGs',
         applicationId: 'mywebapp.mycompany.com',
         applicationVersion: '1.0.0',
@@ -294,7 +300,7 @@ Replace placeholder URLs and credentials with your real values. Copy-ready files
   <!-- Step 0: Runtime config BEFORE the SDK script -->
   <script>
     globalThis.__SAFE_SDK_CONFIG__ = {
-      baseUrl: 'https://gatekeeper.bespot.dev/v2',
+      baseUrl: 'https://gatekeeper.example.com',
       apiKey: '13CTrcYiya9NNnRyd3jXA21CULPPDSqM90sdFnGs',
       applicationId: 'mywebapp.mycompany.com',
       applicationVersion: '1.0.0',
@@ -363,19 +369,44 @@ All four fields are required (non-empty strings) whether passed here or via `glo
 |--------|---------|-------------|
 | `initialize(accessToken: string): Promise<void>` | **Yes** | Validates JWT shape, registers device with Gatekeeper. **Must succeed before `check`.** |
 | `setAccessToken(accessToken: string): void` | **Yes** | Updates JWT **without** re-registering. Use after JWT refresh. Does **not** replace `initialize`. |
-| `setUserId(userId: string): void` | No | Sets your customer/client related unique user identifier" |
-| `check(): Promise<CheckResult>` | No | Runs one Gatekeeper check. Returns success object or `Error`. |
-| `subscribe(): Promise<void>` | No | Starts periodic checks on the **server-configured** interval. Pauses while browser tab is hidden. |
+| `setUserId(userId: string): void` | No | Sets your customer/client related unique user identifier |
+| `check()` | No | Runs one Gatekeeper check. Returns a [check result](integration-guide.md#check-result-shape) object or an `Error` subclass (does not throw). |
+| `subscribe(): Promise<void>` | No | Starts periodic checks on the [registration interval](#periodic-checks). Pauses while browser tab is hidden. |
 | `unsubscribe(): void` | No | Stops periodic checks and clears timers. |
 
-### Properties and helpers
+### Properties
 
 | Member | Description |
 |--------|-------------|
+| `applicationId` | The `applicationId` you configured |
 | `applicationVersion` | The `applicationVersion` you configured |
 | `userId` | Current user id from `setUserId`, or `''` |
-| `isConfigured` | Whether config and session context exist |
-| `result` | Last **successful** `check()` result, or `undefined` |
+| `lastCheckResult` | Last `check()` outcome — [check result](#check-result-shape) object or `Error` subclass, or `undefined` before the first check |
+
+### Check result shape
+
+When `check()` succeeds, it returns a plain object (not an `Error`):
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `action` | `string` | Gatekeeper decision for your application logic (allowed values depend on your Bespot configuration) |
+| `ticket` | `string` | Opaque ticket for this check — use per your integration agreement with Bespot |
+| `timestamp` | `number` | Unix time in **milliseconds** when the result was recorded client-side |
+
+```js
+const result = await sdk.check()
+if (!(result instanceof Error)) {
+  console.log(result.action, result.ticket, result.timestamp)
+}
+```
+
+### Periodic checks
+
+`subscribe()` runs `check()` on a fixed interval. The interval is **not** passed as a JavaScript argument.
+
+The interval is set by Bespot in `configuration.periodic_interval` from device registration (string or number, in **milliseconds**).
+
+Call `subscribe()` with **no arguments** after a successful `initialize()`. Read `sdk.lastCheckResult` after each periodic run.
 
 ---
 
@@ -429,7 +460,7 @@ When logging errors, use **`error.name`** and **`error.message`**.
 | `NetworkError` | Browser could not reach Gatekeeper (`fetch` failed) | Check network, `baseUrl`, HTTPS; if DevTools shows CORS, contact Bespot ([§13](#cors-errors-in-the-browser)) |
 | `ServerError` | Gatekeeper returned HTTP 5xx | Retry later; contact Bespot if persistent |
 | `InvalidResponseError` | Response body was missing required fields | Contact Bespot if persistent |
-| `StorageUnavailable` | Device id could not be saved in the browser | User privacy settings / blocked storage |
+| `StorageUnavailable` | Browser storage could not be used (cookies, localStorage, etc.) | Retry in a normal browser session; ask the user to allow site data if prompted |
 | `UnknownError` | Unclassified failure | Log `error.message`; contact support |
 
 ---
@@ -489,9 +520,9 @@ if (result instanceof Error && result.name === 'AuthenticationFailed') {
 |---------|--------------|-------------------|
 | Calling `check()` before `await initialize()` | `NotInitialized` | Always `initialize` first |
 | Using `try/catch` around `check()` only | Missed failures | Use `if (result instanceof Error)` |
-| Passing arguments to `subscribe()` | Not supported | Call `subscribe()` with no arguments; interval is configured server-side by Bespot |
+| Passing arguments to `subscribe()` | Not supported | Call `subscribe()` with no arguments; interval comes from [server registration](#periodic-checks) |
 | Using SDK tarball version as `applicationVersion` | `NoRecipeFound` or auth errors | Use the app version registered with Bespot |
-| Trailing slash on `baseUrl` | May cause bad URLs | Use `https://host/v2` not `https://host/v2/` |
+| Trailing slash on `baseUrl` | May cause bad URLs | Use `https://gatekeeper.example.com` not `https://gatekeeper.example.com/` |
 | Putting `client_secret` in frontend | Security risk | Token exchange on your server only |
 | Calling `initialize()` on every JWT refresh | Unnecessary re-registration | Use `setAccessToken()` after the first `initialize()` |
 | Loading UMD script before `__SAFE_SDK_CONFIG__` | `InvalidSDKConfiguration` | Config script must run **first** |
@@ -522,7 +553,7 @@ CORS (Cross-Origin Resource Sharing) is enforced by the browser. The SDK calls y
 
 You cannot allowlist your origin in JavaScript or by changing SDK config. Bespot must enable CORS for your production (and staging) origins on the Gatekeeper environment tied to your `baseUrl`.
 
-If the failing request URL matches your `baseUrl` (e.g. `https://gatekeeper.bespot.dev/v2/...`), contact **Bespot** and include:
+If the failing request URL matches your `baseUrl` (e.g. `https://gatekeeper.example.com/...`), contact **Bespot** and include:
 
 - Your site's **origin** as shown in the browser (scheme + host + port, e.g. `https://shop.example.com`)
 - Your `applicationId` and `applicationVersion`
@@ -553,8 +584,10 @@ If the failing request URL matches your `baseUrl` (e.g. `https://gatekeeper.besp
 
 ### `StorageUnavailable` on `initialize`
 
-1. Browser blocks cookies/storage (private mode, strict tracking protection).
-2. Ask user to allow site data or retry in a normal window.
+Browser storage (cookies, localStorage, etc.) could not be used — for example in private mode or with strict tracking protection.
+
+1. Ask the user to allow site data or retry in a normal browser window.
+2. Retry `initialize()` in a standard (non-private) session.
 
 ---
 
