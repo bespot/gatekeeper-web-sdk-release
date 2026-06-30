@@ -42,7 +42,7 @@ Filenames are always `safe-sdk.*` — not `gatekeeper.*`.
    - `new SafeSDK(config)` with all four runtime fields
    - `await initialize(jwt)`
    - `await check()`
-   - `subscribe` / `unsubscribe` if used
+   - `subscribe` / `unsubscribe` if used ([periodic interval](integration-guide.md#periodic-checks))
 3. Deploy to production after checks pass.
 
 ---

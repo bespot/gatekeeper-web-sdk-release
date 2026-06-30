@@ -54,23 +54,22 @@ When logging errors, use **`error.name`** and **`error.message`**.
 | `NetworkError` | Browser could not reach Gatekeeper (`fetch` failed) | Check network, `baseUrl`, CORS, HTTPS |
 | `ServerError` | Gatekeeper returned HTTP 5xx | Retry later; contact Bespot if persistent |
 | `InvalidResponseError` | Response body was missing required fields | Contact Bespot if persistent |
-| `StorageUnavailable` | Storage unavailability may limit some SDK features | Retry in a normal browser session; ask the user to allow site data if prompted |
+| `StorageUnavailable` | Browser storage could not be used (cookies, localStorage, etc.) | Retry in a normal browser session; ask the user to allow site data if prompted |
 | `UnknownError` | Unclassified failure | Log `error.message`; contact support |
 
 ---
 
 ## Geolocation-related outcomes
 
-Geolocation is not always a hard error. After a successful `check()`, use `getLastGeolocationFailure()`:
+Geolocation is not always a hard error. The SDK may still complete a check even when using the device's last known location.
 
-| Value | Meaning |
-|-------|---------|
-| `null` | Location was read successfully |
-| `geoapi_permission_denied` | User denied permission; check still ran |
-| `geoapi_position_unavailable` | Position unavailable; check still ran |
-| `geoapi_timeout` | Timeout; check still ran |
-| `geoapi_unknown_error` | Non-standard geolocation error; check still ran |
-| `geoapi_unavailable` | API missing; `check()` returns `GeolocationNotSupported` instead |
+| Situation | Integrator-visible behavior |
+|-----------|----------------------------|
+| Location read successfully | `check()` returns a normal [check result](integration-guide.md#check-result-shape) |
+| User denied permission | Check may still complete — plan UX accordingly |
+| Position unavailable / timeout | Check may still complete — plan UX accordingly |
+| No Geolocation API | `check()` returns `GeolocationNotSupported` |
+
+The SDK caches the last known position for **60 seconds** to reduce repeated browser prompts.
 
 See [Geolocation](integration-guide.md#10-geolocation).
-

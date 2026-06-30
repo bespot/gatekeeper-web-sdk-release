@@ -1,6 +1,6 @@
 {
   "name": "@bespot/gatekeeper-web-sdk",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Bespot Gatekeeper Web SDK",
   "private": false,
   "type": "module",
@@ -15,7 +15,30 @@
   "files": [
     "dist",
     "README.md",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "fraud-prevention",
+    "fraud-detection",
+    "bot-detection",
+    "ai-agent-detection",
+    "geolocation",
+    "geolocation-verification",
+    "location-spoofing",
+    "vpn-detection",
+    "proxy-detection",
+    "device-fingerprinting",
+    "account-takeover",
+    "multi-accounting",
+    "bonus-abuse",
+    "risk-scoring",
+    "security",
+    "javascript-sdk",
+    "web-sdk",
+    "gaming",
+    "ecommerce",
+    "fintech"
   ],
   "repository": {
     "type": "git",
