@@ -61,7 +61,7 @@ When logging errors, use **`error.name`** and **`error.message`**.
 
 ## Geolocation-related outcomes
 
-Geolocation is not always a hard error. The SDK may still complete a check even when location is imperfect.
+Geolocation is not always a hard error. The SDK may still complete a check even when using the device's last known location.
 
 | Situation | Integrator-visible behavior |
 |-----------|----------------------------|
