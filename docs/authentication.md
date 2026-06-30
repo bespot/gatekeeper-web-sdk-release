@@ -22,7 +22,7 @@ Set on every page before or when constructing `SafeSDK`:
 | `apiKey` | `x-api-key` on Gatekeeper requests |
 | `applicationId` | URL path segment |
 | `applicationVersion` | URL path segment |
-| `baseUrl` | Gatekeeper API root (no `/` at the end), e.g. `https://gatekeeper.example.com` |
+| `baseUrl` | Gatekeeper API root (no `/` at the end). Sample: `bespot-gatekeeper-base-url` (e.g. `https://gatekeeper.bespotcompany.com`) |
 
 See [Runtime configuration](integration-guide.md#5-runtime-configuration).
 

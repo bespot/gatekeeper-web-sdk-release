@@ -6,11 +6,20 @@
 [![Platform](https://img.shields.io/badge/platform-browser-lightgrey)](docs/integration-guide.md#2-bespot-prerequisites)
 [![License](https://img.shields.io/badge/License-Integrator%20License-red)](LICENSE)
 
-Browser SDK for Bespot Gatekeeper antifraud checks. This repository contains **pre-built SDK bundles**, integration documentation, and starter templates.
+Web SDK for Bespot Gatekeeper, a fraud prevention and location integrity platform for web
+applications.
+
+Use this SDK to run real-time fraud checks in browser sessions and receive policy results for
+high-risk actions such as signup, login, checkout, reward redemption, wallet actions, account
+changes, or location-restricted access.
+
+Gatekeeper helps detect and evaluate bot traffic, AI agents, location spoofing, VPN/proxy use,
+suspicious browser or device signals, multi-accounting, and abuse patterns such as bonus, promo,
+or reward fraud.
 
 ## Prerequisites
 
-Before integrating, sign in at **[gatekeeper.bespot.com](https://gatekeeper.bespot.com)** to create your account and obtain your API key and other credentials for SDK runtime configuration.
+Before integrating, sign up at **[gatekeeper.bespot.com](https://gatekeeper.bespot.com)** to create your account and obtain your API key and other credentials for SDK runtime configuration.
 
 ## Documentation
 
@@ -56,10 +65,10 @@ No Node.js required. Download `safe-sdk.esm.min.js` or `safe-sdk.umd.min.js` fro
 
 ```ts
 const sdk = new SafeSDK({
-  baseUrl: 'https://gatekeeper.example.com',
-  apiKey: '13CTrcYiya9NNnRyd3jXA21CULPPDSqM90sdFnGs',
-  applicationId: 'your-app-id',
-  applicationVersion: 'your-app-version',
+  baseUrl: 'bespot-gatekeeper-base-url', // e.g. 'https://gatekeeper.bespotcompany.com'
+  apiKey: 'your-api-key', // e.g. '13CTrcYiya9NNnRyd3jXA21CULPPDSqM90sdFnGs'
+  applicationId: 'your-app-id', // e.g. 'mywebapp.mycompany.com'
+  applicationVersion: 'your-app-version', // e.g. '2.4.1'
 })
 
 await sdk.initialize(jwt)

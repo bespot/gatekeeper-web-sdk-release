@@ -20,6 +20,6 @@ Starter files for Gatekeeper Web SDK integration. Copy into your project and rep
 
 ## Values to update
 
-- `apiKey`, `applicationId`, `applicationVersion`, `baseUrl` (replace the sample values with yours)
+- `baseUrl`, `apiKey`, `applicationId`, `applicationVersion` — replace sample placeholders (see inline `// e.g.` comments in templates)
 - `/api/gatekeeper-token` — your backend JWT endpoint
 - `/sdk/safe-sdk.*.min.js` — path to your hosted bundle files
