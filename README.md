@@ -91,10 +91,36 @@ This SDK makes **runtime-only** HTTPS requests to the Gatekeeper API URL you con
 
 - No install scripts (`preinstall`, `postinstall`, etc.)
 - No network activity during `npm install`
-- No background network calls outside your app's `initialize()` / `check()` usage
+- Network requests occur during `initialize()`, `check()`, and optionally during periodic
+  checks if you call `subscribe()` (see [periodic checks](docs/integration-guide.md#periodic-checks))
 - Requests use the browser `fetch` API with your API key and JWT
 
 This behavior is required for Gatekeeper fraud and location checks.
+
+## Data collection
+
+During `initialize()` and `check()` (and periodic checks when `subscribe()` is active), the SDK
+collects browser and device signals needed for fraud prevention and location integrity:
+
+- **Device fingerprint** — canvas, WebGL, and audio signals are hashed into a deterministic
+  `device_seed` (raw fingerprint values are not transmitted)
+- **Geolocation** — browser Geolocation API when the user grants permission (see
+  [geolocation](docs/integration-guide.md#10-geolocation))
+- **Browser and device metadata** — user agent, screen, locale, connection type, and related
+  fields included in check payloads
+- **Persistent identifiers** — session data stored across localStorage, sessionStorage, cookies,
+  and IndexedDB for device continuity across visits
+
+Collection happens only at runtime in the browser. There is no install-time or background data
+collection outside your integration (`initialize()`, `check()`, and optional `subscribe()`).
+
+Integrators are responsible for disclosing this behavior to end users and obtaining consent where
+required by applicable privacy law and your policies.
+
+## Distribution format
+
+Published npm and GitHub Release artifacts are intentionally **minified** production bundles
+(`safe-sdk.esm.min.js`, `safe-sdk.umd.min.js`). Source maps are not included in the npm package.
 
 ## License
 
