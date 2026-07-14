@@ -1,7 +1,7 @@
 # Bespot Gatekeeper Web SDK
 
 [![npm version](https://img.shields.io/npm/v/@bespot/gatekeeper-web-sdk)](https://www.npmjs.com/package/@bespot/gatekeeper-web-sdk)
-[![Socket Badge](https://badge.socket.dev/npm/package/@bespot/gatekeeper-web-sdk/1.0.1)](https://badge.socket.dev/npm/package/@bespot/gatekeeper-web-sdk/1.0.1)
+[![Socket Badge](https://badge.socket.dev/npm/package/@bespot/gatekeeper-web-sdk/latest)](https://socket.dev/npm/package/@bespot/gatekeeper-web-sdk/overview/latest)
 [![GitHub release](https://img.shields.io/github/v/release/bespot/gatekeeper-web-sdk-release)](https://github.com/bespot/gatekeeper-web-sdk-release/releases)
 [![Module format](https://img.shields.io/badge/modules-ESM%20%2B%20UMD-blue)](docs/integration-guide.md#4-distribution-format-selection)
 [![Platform](https://img.shields.io/badge/platform-browser-lightgrey)](docs/integration-guide.md#2-bespot-prerequisites)
