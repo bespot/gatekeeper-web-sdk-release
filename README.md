@@ -1,6 +1,7 @@
 # Bespot Gatekeeper Web SDK
 
 [![npm version](https://img.shields.io/npm/v/@bespot/gatekeeper-web-sdk)](https://www.npmjs.com/package/@bespot/gatekeeper-web-sdk)
+[![Socket Badge](https://badge.socket.dev/npm/package/@bespot/gatekeeper-web-sdk/1.0.1)](https://badge.socket.dev/npm/package/@bespot/gatekeeper-web-sdk/1.0.1)
 [![GitHub release](https://img.shields.io/github/v/release/bespot/gatekeeper-web-sdk-release)](https://github.com/bespot/gatekeeper-web-sdk-release/releases)
 [![Module format](https://img.shields.io/badge/modules-ESM%20%2B%20UMD-blue)](docs/integration-guide.md#4-distribution-format-selection)
 [![Platform](https://img.shields.io/badge/platform-browser-lightgrey)](docs/integration-guide.md#2-bespot-prerequisites)
@@ -82,6 +83,18 @@ if (result instanceof Error) {
 ```
 
 Starter pages: [templates/integration-esm.html](templates/integration-esm.html), [templates/integration-umd.html](templates/integration-umd.html).
+
+## Network behavior
+
+This SDK makes **runtime-only** HTTPS requests to the Gatekeeper API URL you configure in
+`baseUrl` (typically `/register` and `/check`).
+
+- No install scripts (`preinstall`, `postinstall`, etc.)
+- No network activity during `npm install`
+- No background network calls outside your app's `initialize()` / `check()` usage
+- Requests use the browser `fetch` API with your API key and JWT
+
+This behavior is required for Gatekeeper fraud and location checks.
 
 ## License
 
