@@ -5,6 +5,9 @@ on:
     types: [closed]
     branches: [main]
 
+permissions:
+  contents: read
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -18,10 +21,15 @@ jobs:
     timeout-minutes: 10
     concurrency:
       group: release-${{ github.event.pull_request.head.ref }}
-      cancel-in-progress: false
+      cancel-in-progress: true
     permissions:
       contents: write
       id-token: write
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+      version: ${{ steps.meta.outputs.version }}
+      html_url: ${{ steps.github_release.outputs.html_url }}
+      release_created: ${{ steps.github_release.outputs.release_created }}
 
     steps:
       - name: Checkout merge commit
@@ -101,34 +109,79 @@ jobs:
           PY
         shell: bash
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '24'
-          registry-url: 'https://registry.npmjs.org'
+      - name: Preflight notification secrets
+        env:
+          UPSTREAM_GH_TOKEN: ${{ secrets.UPSTREAM_GH_TOKEN }}
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_SITE_URL: ${{ secrets.JIRA_SITE_URL }}
+          JIRA_OAUTH_CLIENT_ID: ${{ secrets.JIRA_OAUTH_CLIENT_ID }}
+          JIRA_OAUTH_CLIENT_SECRET: ${{ secrets.JIRA_OAUTH_CLIENT_SECRET }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          set -euo pipefail
+          missing=0
+          for name in UPSTREAM_GH_TOKEN JIRA_BASE_URL JIRA_OAUTH_CLIENT_ID JIRA_OAUTH_CLIENT_SECRET SLACK_WEBHOOK_URL; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::Missing secret: ${name}"
+              missing=1
+            else
+              echo "OK: ${name} is set"
+            fi
+          done
+          if [[ "${JIRA_BASE_URL:-}" == *"api.atlassian.com/ex/jira/"* ]] && [ -z "${JIRA_SITE_URL:-}" ]; then
+            echo "::error::Missing secret: JIRA_SITE_URL"
+            missing=1
+          fi
+          if [ "${missing}" -ne 0 ]; then
+            echo "::error::Notification secrets must be configured before publishing a new release."
+            exit 1
+          fi
+        shell: bash
 
-      - name: Publish to npm
+      - name: Check npm publish needed
+        id: npm
         env:
           VERSION: ${{ steps.meta.outputs.version }}
         run: |
           set -euo pipefail
           npm_version="$(npm view "@bespot/gatekeeper-web-sdk@${VERSION}" version 2>/dev/null || true)"
           if [ -n "${npm_version}" ]; then
-            echo "::warning::@bespot/gatekeeper-web-sdk@${VERSION} already on npm; skipping."
+            echo "publish_needed=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::@bespot/gatekeeper-web-sdk@${VERSION} already on npm; skipping Node setup and publish."
           else
-            npm publish --provenance --access public
-            echo "Published @bespot/gatekeeper-web-sdk@${VERSION} to npm."
+            echo "publish_needed=true" >> "$GITHUB_OUTPUT"
           fi
         shell: bash
 
+      - name: Set up Node.js
+        if: steps.npm.outputs.publish_needed == 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Publish to npm
+        if: steps.npm.outputs.publish_needed == 'true'
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          set -euo pipefail
+          npm publish --provenance --access public
+          echo "Published @bespot/gatekeeper-web-sdk@${VERSION} to npm."
+        shell: bash
+
       - name: Create or update GitHub Release
+        id: github_release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ steps.meta.outputs.tag }}
         run: |
           set -euo pipefail
           sha256sum dist/safe-sdk.esm.min.js dist/safe-sdk.umd.min.js > SHA256SUMS
-          if gh release view "${TAG}" &>/dev/null; then
+          if existing_url="$(gh release view "${TAG}" --json url -q '.url' 2>/dev/null)"; then
+            echo "release_created=false" >> "$GITHUB_OUTPUT"
+            echo "html_url=${existing_url}" >> "$GITHUB_OUTPUT"
+            echo "::notice::GitHub release ${TAG} already exists; updating assets only. Jira/Slack notifications will be skipped."
             gh release edit "${TAG}" \
               --title "${TAG}" \
               --notes-file /tmp/release-notes.md
@@ -138,11 +191,350 @@ jobs:
               SHA256SUMS \
               --clobber
           else
+            echo "release_created=true" >> "$GITHUB_OUTPUT"
             gh release create "${TAG}" \
               --title "${TAG}" \
               --notes-file /tmp/release-notes.md \
               dist/safe-sdk.esm.min.js \
               dist/safe-sdk.umd.min.js \
               SHA256SUMS
+            html_url="$(gh release view "${TAG}" --json url -q '.url')"
+            echo "html_url=${html_url}" >> "$GITHUB_OUTPUT"
           fi
+        shell: bash
+
+  changelog-parsing:
+    name: Changelog Parsing
+    needs: create-release
+    if: >-
+      always() &&
+      needs['create-release'].result == 'success' &&
+      needs['create-release'].outputs.release_created == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    outputs:
+      tickets: ${{ steps.parse.outputs.tickets }}
+      slack_section: ${{ steps.parse.outputs.slack_section }}
+    steps:
+      - name: Parse upstream release notes for FRD tickets
+        id: parse
+        env:
+          TAG: ${{ needs.create-release.outputs.tag }}
+          UPSTREAM_GH_TOKEN: ${{ secrets.UPSTREAM_GH_TOKEN }}
+          UPSTREAM_REPO: bespot/gatekeeper-web-sdk
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_SITE_URL: ${{ secrets.JIRA_SITE_URL }}
+        run: |
+          set -euo pipefail
+          if [[ "${JIRA_BASE_URL:-}" == *"api.atlassian.com/ex/jira/"* ]] && [ -z "${JIRA_SITE_URL:-}" ]; then
+            echo "::error::JIRA_SITE_URL is required when JIRA_BASE_URL is the OAuth gateway URL (e.g. https://bespot.atlassian.net)."
+            exit 1
+          fi
+
+          attempt=1
+          max_attempts=3
+          delay=5
+          release_body=""
+          while [ "${attempt}" -le "${max_attempts}" ]; do
+            if release_body="$(
+              GH_TOKEN="${UPSTREAM_GH_TOKEN}" gh release view "${TAG}" \
+                --repo "${UPSTREAM_REPO}" \
+                --json body \
+                -q '.body // ""' 2>/dev/null
+            )"; then
+              break
+            fi
+            if [ "${attempt}" -eq "${max_attempts}" ]; then
+              echo "::error::Failed to fetch release notes from ${UPSTREAM_REPO} for ${TAG} after ${max_attempts} attempts."
+              exit 1
+            fi
+            echo "::warning::Upstream release fetch failed (attempt ${attempt}/${max_attempts}); retrying in ${delay}s..."
+            sleep "${delay}"
+            attempt=$((attempt + 1))
+            delay=$((delay * 2))
+          done
+
+          parsed="$(
+            RELEASE_BODY="${release_body}" python3 <<'PY'
+          import json
+          import os
+          import re
+
+          body = os.environ.get("RELEASE_BODY", "")
+          jira_api_base = os.environ.get("JIRA_BASE_URL", "").rstrip("/")
+          jira_site = os.environ.get("JIRA_SITE_URL", "").rstrip("/")
+          if not jira_site:
+              if "api.atlassian.com/ex/jira/" not in jira_api_base:
+                  jira_site = jira_api_base
+          jira_base = jira_site
+
+          bullets: list[dict[str, str]] = []
+          for line in body.splitlines():
+              stripped = line.strip()
+              if not stripped.startswith("*"):
+                  continue
+              key_match = re.search(r"(FRD-\d+)", stripped)
+              if not key_match:
+                  continue
+              key = key_match.group(1)
+              plain = re.sub(r"\*\*", "", stripped)
+              plain = re.sub(r"^\*\s*", "", plain)
+              title_match = re.search(
+                  rf"{re.escape(key)}[:\)]\s*(.+?)(?:\s*\(\[?#|\s*\(#|\s*$)",
+                  plain,
+              )
+              if not title_match:
+                  continue
+              title = title_match.group(1).strip()
+              title = re.sub(r"\s*\(\[.*$", "", title).strip()
+              bullets.append({"key": key, "title": title})
+
+          seen: set[str] = set()
+          tickets: list[str] = []
+          for item in bullets:
+              if item["key"] not in seen:
+                  seen.add(item["key"])
+                  tickets.append(item["key"])
+
+          lines = ["*What's changed*"]
+          if bullets:
+              for item in bullets:
+                  key, title = item["key"], item["title"]
+                  if jira_base:
+                      url = f"{jira_base}/browse/{key}"
+                      lines.append(f"• <{url}|{key}> - {title}")
+                  else:
+                      lines.append(f"• {key} - {title}")
+          else:
+              lines.append("_No FRD tickets found in this release changelog._")
+
+          print(
+              json.dumps(
+                  {
+                      "tickets": ",".join(tickets),
+                      "slack_section": "\n".join(lines),
+                  }
+              )
+          )
+          PY
+          )"
+          tickets="$(echo "${parsed}" | jq -r '.tickets')"
+          slack_section="$(echo "${parsed}" | jq -r '.slack_section')"
+          echo "tickets=${tickets}" >> "$GITHUB_OUTPUT"
+          {
+            echo 'slack_section<<EOF'
+            printf '%s\n' "${slack_section}"
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+        shell: bash
+
+  jira-release:
+    name: Jira Release
+    needs: [create-release, changelog-parsing]
+    if: >-
+      always() &&
+      needs['create-release'].result == 'success' &&
+      needs['create-release'].outputs.release_created == 'true' &&
+      needs['changelog-parsing'].result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: {}
+    outputs:
+      version_url: ${{ steps.jira.outputs.version_url }}
+      version_name: ${{ steps.jira.outputs.version_name }}
+
+    steps:
+      - name: Create Jira fix version and link issues
+        id: jira
+        env:
+          VERSION: ${{ needs.create-release.outputs.version }}
+          TICKETS_CSV: ${{ needs.changelog-parsing.outputs.tickets }}
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_SITE_URL: ${{ secrets.JIRA_SITE_URL }}
+          JIRA_OAUTH_CLIENT_ID: ${{ secrets.JIRA_OAUTH_CLIENT_ID }}
+          JIRA_OAUTH_CLIENT_SECRET: ${{ secrets.JIRA_OAUTH_CLIENT_SECRET }}
+          JIRA_PROJECT: FRD
+        run: |
+          set -euo pipefail
+          VERSION_NAME="${VERSION}-web"
+          echo "version_name=${VERSION_NAME}" >> "$GITHUB_OUTPUT"
+
+          if [ -z "${JIRA_BASE_URL:-}" ] || [ -z "${JIRA_OAUTH_CLIENT_ID:-}" ] || [ -z "${JIRA_OAUTH_CLIENT_SECRET:-}" ]; then
+            echo "::error::Jira release requires secrets: JIRA_BASE_URL, JIRA_OAUTH_CLIENT_ID, JIRA_OAUTH_CLIENT_SECRET."
+            exit 1
+          fi
+          if [[ "${JIRA_BASE_URL}" != *"api.atlassian.com/ex/jira/"* ]]; then
+            echo "::warning::JIRA_BASE_URL should be the OAuth gateway URL (https://api.atlassian.com/ex/jira/<cloud-id>), not the site URL."
+          fi
+          if [[ "${JIRA_BASE_URL}" == *"api.atlassian.com/ex/jira/"* ]] && [ -z "${JIRA_SITE_URL:-}" ]; then
+            echo "::error::JIRA_SITE_URL is required when JIRA_BASE_URL is the OAuth gateway URL (e.g. https://bespot.atlassian.net)."
+            exit 1
+          fi
+
+          JIRA_API_URL="${JIRA_BASE_URL%/}"
+          JIRA_SITE_URL="${JIRA_SITE_URL%/}"
+          if [ -z "${JIRA_SITE_URL}" ] && [[ "${JIRA_API_URL}" != *"api.atlassian.com/ex/jira/"* ]]; then
+            JIRA_SITE_URL="${JIRA_API_URL}"
+          fi
+
+          curl_retry() {
+            curl --retry 3 --retry-delay 5 --retry-all-errors -sS "$@"
+          }
+
+          JIRA_ACCESS_TOKEN="$(
+            curl_retry -f -X POST 'https://auth.atlassian.com/oauth/token' \
+              -H 'Content-Type: application/x-www-form-urlencoded' \
+              --data-urlencode 'grant_type=client_credentials' \
+              --data-urlencode "client_id=${JIRA_OAUTH_CLIENT_ID}" \
+              --data-urlencode "client_secret=${JIRA_OAUTH_CLIENT_SECRET}" \
+              | jq -e -r '.access_token'
+          )"
+          echo "::add-mask::${JIRA_ACCESS_TOKEN}"
+          echo "Obtained Jira OAuth access token (github-actions service account)."
+
+          jira_api() {
+            local method="$1"
+            local path="$2"
+            local data="${3:-}"
+            local args=(
+              -f -X "${method}"
+              -H "Authorization: Bearer ${JIRA_ACCESS_TOKEN}"
+              -H "Accept: application/json"
+            )
+            if [ -n "${data}" ]; then
+              args+=(-H "Content-Type: application/json" --data "${data}")
+            fi
+            curl_retry "${args[@]}" "${JIRA_API_URL}${path}"
+          }
+
+          if [ -n "${TICKETS_CSV}" ]; then
+            IFS=',' read -r -a TICKETS <<< "${TICKETS_CSV}"
+          else
+            TICKETS=()
+          fi
+
+          PROJECT_JSON="$(jira_api GET "/rest/api/3/project/${JIRA_PROJECT}")"
+          PROJECT_ID="$(echo "${PROJECT_JSON}" | jq -e -r '.id' | tr -d '[:space:]')"
+          if ! [[ "${PROJECT_ID}" =~ ^[0-9]+$ ]]; then
+            echo "::error::Unexpected Jira project id for ${JIRA_PROJECT}: ${PROJECT_ID}"
+            exit 1
+          fi
+          RELEASE_DATE="$(date -u +%Y-%m-%d)"
+
+          VERSION_ID="$(
+            jira_api GET "/rest/api/3/project/${JIRA_PROJECT}/versions" \
+              | jq -r --arg name "${VERSION_NAME}" '.[] | select(.name == $name) | .id' \
+              | head -n 1 || true
+          )"
+
+          if [ -n "${VERSION_ID}" ]; then
+            echo "Reusing existing Jira fix version ${VERSION_NAME} (${VERSION_ID})"
+            jira_api PUT "/rest/api/3/version/${VERSION_ID}" "$(jq -n \
+              --arg releaseDate "${RELEASE_DATE}" \
+              '{released: true, releaseDate: $releaseDate}')" >/dev/null
+          else
+            CREATE_PAYLOAD="$(jq -n \
+              --arg name "${VERSION_NAME}" \
+              --arg projectId "${PROJECT_ID}" \
+              --arg releaseDate "${RELEASE_DATE}" \
+              '{name: $name, projectId: ($projectId | tonumber), released: true, releaseDate: $releaseDate}')"
+            echo "Creating Jira fix version ${VERSION_NAME} (projectId=${PROJECT_ID})"
+            VERSION_JSON="$(jira_api POST "/rest/api/3/version" "${CREATE_PAYLOAD}")"
+            VERSION_ID="$(echo "${VERSION_JSON}" | jq -e -r '.id')"
+            echo "Created Jira fix version ${VERSION_NAME} (${VERSION_ID})"
+          fi
+
+          VERSION_URL="${JIRA_SITE_URL}/projects/${JIRA_PROJECT}/versions/${VERSION_ID}"
+          echo "version_url=${VERSION_URL}" >> "$GITHUB_OUTPUT"
+
+          link_failures=0
+          for KEY in "${TICKETS[@]}"; do
+            [ -z "${KEY}" ] && continue
+            if curl_retry -X PUT \
+              -H "Authorization: Bearer ${JIRA_ACCESS_TOKEN}" \
+              -H "Accept: application/json" \
+              -H "Content-Type: application/json" \
+              --data "$(jq -n --arg name "${VERSION_NAME}" '{update: {fixVersions: [{add: {name: $name}}]}}')" \
+              "${JIRA_API_URL}/rest/api/3/issue/${KEY}" >/dev/null; then
+              echo "Linked ${KEY} → ${VERSION_NAME}"
+            else
+              echo "::warning::Failed to link ${KEY} to ${VERSION_NAME}; continuing with remaining tickets."
+              link_failures=$((link_failures + 1))
+            fi
+          done
+
+          if [ "${#TICKETS[@]}" -eq 0 ]; then
+            echo "::notice::No FRD-* keys in changelog bullets; fix version created without linked issues."
+          elif [ "${link_failures}" -gt 0 ]; then
+            echo "::warning::${link_failures} ticket(s) could not be linked to ${VERSION_NAME}."
+          fi
+        shell: bash
+
+  slack-release:
+    name: Slack Release
+    needs:
+      - create-release
+      - changelog-parsing
+      - jira-release
+    if: >-
+      always() &&
+      needs['create-release'].result == 'success' &&
+      needs['create-release'].outputs.release_created == 'true' &&
+      needs['changelog-parsing'].result == 'success' &&
+      needs['jira-release'].result == 'success' &&
+      needs['jira-release'].outputs.version_url != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+
+    steps:
+      - name: Build and send Slack notification
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          VERSION: ${{ needs.create-release.outputs.version }}
+          HTML_URL: ${{ needs.create-release.outputs.html_url }}
+          SLACK_SECTION: ${{ needs.changelog-parsing.outputs.slack_section }}
+          JIRA_VERSION_URL: ${{ needs.jira-release.outputs.version_url }}
+          JIRA_VERSION_NAME: ${{ needs.jira-release.outputs.version_name }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SLACK_WEBHOOK_URL:-}" ]; then
+            echo "::error::Slack release requires secret: SLACK_WEBHOOK_URL."
+            exit 1
+          fi
+          section_text="${SLACK_SECTION}"
+
+          # Slack section text is capped at 3000 characters.
+          if [ "${#section_text}" -gt 2900 ]; then
+            section_text="${section_text:0:2900}…"
+          fi
+
+          blocks="$(jq -n \
+            --arg title "🌐 Gatekeeper Web SDK Release ${VERSION}" \
+            --arg section "${section_text}" \
+            --arg version "${VERSION}" \
+            --arg gh_url "${HTML_URL}" \
+            --arg jira_url "${JIRA_VERSION_URL}" \
+            --arg jira_name "${JIRA_VERSION_NAME}" \
+            '
+            [
+              { type: "header", text: { type: "plain_text", text: $title, emoji: true } },
+              { type: "section", text: { type: "mrkdwn", text: $section } },
+              {
+                type: "context",
+                elements: [
+                  { type: "mrkdwn", text: ("<" + $jira_url + "|Jira Release " + $jira_name + ">") },
+                  { type: "mrkdwn", text: ("<" + $gh_url + "|GitHub Release " + $version + ">") }
+                ]
+              }
+            ]
+            | { blocks: . }
+            ')"
+
+          echo "${blocks}" | jq .
+          curl --retry 3 --retry-delay 5 --retry-all-errors -sSf -X POST \
+            -H 'Content-type: application/json' \
+            --data "${blocks}" \
+            "${SLACK_WEBHOOK_URL}"
         shell: bash
