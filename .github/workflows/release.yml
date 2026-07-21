@@ -111,7 +111,7 @@ jobs:
 
       - name: Preflight notification secrets
         env:
-          UPSTREAM_GH_TOKEN: ${{ secrets.UPSTREAM_GH_TOKEN }}
+          SOURCE_REPO_PAT: ${{ secrets.SOURCE_REPO_PAT }}
           JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
           JIRA_SITE_URL: ${{ secrets.JIRA_SITE_URL }}
           JIRA_OAUTH_CLIENT_ID: ${{ secrets.JIRA_OAUTH_CLIENT_ID }}
@@ -120,7 +120,7 @@ jobs:
         run: |
           set -euo pipefail
           missing=0
-          for name in UPSTREAM_GH_TOKEN JIRA_BASE_URL JIRA_OAUTH_CLIENT_ID JIRA_OAUTH_CLIENT_SECRET SLACK_WEBHOOK_URL; do
+          for name in SOURCE_REPO_PAT JIRA_BASE_URL JIRA_OAUTH_CLIENT_ID JIRA_OAUTH_CLIENT_SECRET SLACK_WEBHOOK_URL; do
             if [ -z "${!name:-}" ]; then
               echo "::error::Missing secret: ${name}"
               missing=1
@@ -221,7 +221,7 @@ jobs:
         id: parse
         env:
           TAG: ${{ needs.create-release.outputs.tag }}
-          UPSTREAM_GH_TOKEN: ${{ secrets.UPSTREAM_GH_TOKEN }}
+          SOURCE_REPO_PAT: ${{ secrets.SOURCE_REPO_PAT }}
           UPSTREAM_REPO: bespot/gatekeeper-web-sdk
           JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
           JIRA_SITE_URL: ${{ secrets.JIRA_SITE_URL }}
@@ -238,7 +238,7 @@ jobs:
           release_body=""
           while [ "${attempt}" -le "${max_attempts}" ]; do
             if release_body="$(
-              GH_TOKEN="${UPSTREAM_GH_TOKEN}" gh release view "${TAG}" \
+              GH_TOKEN="${SOURCE_REPO_PAT}" gh release view "${TAG}" \
                 --repo "${UPSTREAM_REPO}" \
                 --json body \
                 -q '.body // ""' 2>/dev/null
