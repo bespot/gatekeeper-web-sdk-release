@@ -1,10 +1,9 @@
 # Bespot Gatekeeper Web SDK
 
-[![npm version](https://img.shields.io/npm/v/@bespot/gatekeeper-web-sdk)](https://www.npmjs.com/package/@bespot/gatekeeper-web-sdk)
-[![GitHub release](https://img.shields.io/github/v/release/bespot/gatekeeper-web-sdk-release)](https://github.com/bespot/gatekeeper-web-sdk-release/releases)
-[![Module format](https://img.shields.io/badge/modules-ESM%20%2B%20UMD-blue)](docs/integration-guide.md#4-distribution-format-selection)
-[![Platform](https://img.shields.io/badge/platform-browser-lightgrey)](docs/integration-guide.md#2-bespot-prerequisites)
-[![License](https://img.shields.io/badge/License-Integrator%20License-red)](LICENSE)
+[![npm](https://img.shields.io/npm/v/@bespot/gatekeeper-web-sdk?style=flat-square&logo=npm&logoColor=white)](https://www.npmjs.com/package/@bespot/gatekeeper-web-sdk)
+[![release](https://img.shields.io/github/v/release/bespot/gatekeeper-web-sdk-release?style=flat-square&logo=github&label=release)](https://github.com/bespot/gatekeeper-web-sdk-release/releases)
+[![Socket](https://badge.socket.dev/npm/package/@bespot/gatekeeper-web-sdk/latest)](https://socket.dev/npm/package/@bespot/gatekeeper-web-sdk/overview/latest)
+[![License](https://img.shields.io/badge/License-Integrator%20License-red?style=flat-square&logo=data%3Aimage%2Fpng%3Bbase64%2CiVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC%2BaJAAADvklEQVR4nOyaXUg0VRjH%2F6u7uq66ra%2FvW%2BZGJrnaWhltq%2BlSBiH2QZkXdRFRYERGRDdFIEQE0kVliSRd1J0opWYhdNGF4mpiliBrapblVx9%2BhK7f67q7unFycHbWmXXmnNV5F%2BbHIs8z83ee579zZs6cYfVh%2B4tIZJLUboAVzYDaaAbURjOgNpoBtdEMqE3CG9Ar0F4148ESLg6G8O3oBfWkCCUG8m%2FGe3VcvOO7Tgwk%2FBDSDKiNZkBtNANqQ2sgHI5zI7QomcgiOTqO3pKkwzULMtPIro0dMtNdCrQGAkEuSE7C42WoccFRgLRUXrDqxfAUOt2YXopHn5LQGjg4JH8LrfjwZdhuERHkXMHTleTTO4LGDvj8bH1KQnsN7B7g7ny0N4h3H8lTLrS9BbOJstB50J4BUyo%2BeQ0ZaSTe2kPfOCYXsL6N4zC5Epw2VDthTOHExXlofgUvNV%2FEpU9roMDKBV8M4KNu%2BA4Fe78awsc9ZHSVFnFbKu7EM5XoGmRqVgy2eaDTjcb26O5P%2BHcL9c2Y%2BZPf8moNDMlM5cRgMLDjQ1N3LIE%2FiHfb%2BPRGCx6%2Bl76cBAwGvvsJ%2B%2BfdWyYX4Jnj0yoHfTkJGAz8MCNLNuDhY2chfTkJGAz89pcs2eQCH9%2BUBUs6fUUxGAyseGXJltYEqfUqfUUxaA34AzgMylJ6dwVpVgZlRQloDQRCcpVRPk9ntzhx6euBeM%2FFtAaMBrlKU6og9QcoK0pAayDFEN2ZFNlmQbq5R1lRAoYhJPN%2Bkp8jSP9Zp68oBoMB%2B62yZPfczserXmzv01cUg8HAA3fJkkU%2BPozN0peTgMFAlSN6fJ%2FFVQyblU%2F7xiWVBj0sNFMEgwFjCt5%2BDjppQYaRCE5Z9Qqei07RAQ3PYqwVIy3o%2BwD336GoC7Z54BEnmurFH29yr%2BDzN3BbxBXc2ovQkYjy0VI8X0Vua%2BS%2FsskBDQqWWbQrsvHfUZALczoeK8NDJej3wPMHWcSEjnDtBjiLUH2fYNIdnMDXw%2BKHKrcL0mwzGXW%2FyH2XQWugo5%2Fc0T99nXRpMuLJcvKRYmIOb34muffs963kDFANoTDw468YncEL72N%2BJZbyOIwuN%2BqaYi19IpedJ2%2Bc5pfl96LkDGztYehnEqxtcs%2BYU4uofYeMoifK4bAh3ciLlzeI%2BEs3Zv8%2B57A936PWBXsel7Z8g90D%2BU3p4vaLLZ2OjP5M0%2F%2BvFrcVNQF9MirsyMrE9CLmYp7Ss2W1n5ypjGZAbTQDaqMZUBvNgNpoBtQm4Q38FwAA%2F%2F8fNufzjhQUMgAAAABJRU5ErkJggg%3D%3D)](LICENSE)
 
 Web SDK for Bespot Gatekeeper, a fraud prevention and location integrity platform for web
 applications.
@@ -82,6 +81,44 @@ if (result instanceof Error) {
 ```
 
 Starter pages: [templates/integration-esm.html](templates/integration-esm.html), [templates/integration-umd.html](templates/integration-umd.html).
+
+## Network behavior
+
+This SDK makes **runtime-only** HTTPS requests to the Gatekeeper API URL you configure in
+`baseUrl` (typically `/register` and `/check`).
+
+- No install scripts (`preinstall`, `postinstall`, etc.)
+- No network activity during `npm install`
+- Network requests occur during `initialize()`, `check()`, and optionally during periodic
+  checks if you call `subscribe()` (see [periodic checks](docs/integration-guide.md#periodic-checks))
+- Requests use the browser `fetch` API with your API key and JWT
+
+This behavior is required for Gatekeeper fraud and location checks.
+
+## Data collection
+
+During `initialize()` and `check()` (and periodic checks when `subscribe()` is active), the SDK
+collects browser and device signals needed for fraud prevention and location integrity:
+
+- **Device fingerprint** — canvas, WebGL, and audio signals are hashed into a deterministic
+  `device_seed` (raw fingerprint values are not transmitted)
+- **Geolocation** — browser Geolocation API when the user grants permission (see
+  [geolocation](docs/integration-guide.md#10-geolocation))
+- **Browser and device metadata** — user agent, screen, locale, connection type, and related
+  fields included in check payloads
+- **Persistent identifiers** — session data stored across localStorage, sessionStorage, cookies,
+  and IndexedDB for device continuity across visits
+
+Collection happens only at runtime in the browser. There is no install-time or background data
+collection outside your integration (`initialize()`, `check()`, and optional `subscribe()`).
+
+Integrators are responsible for disclosing this behavior to end users and obtaining consent where
+required by applicable privacy law and your policies.
+
+## Distribution format
+
+Published npm and GitHub Release artifacts are intentionally **minified** production bundles
+(`safe-sdk.esm.min.js`, `safe-sdk.umd.min.js`). Source maps are not included in the npm package.
 
 ## License
 
