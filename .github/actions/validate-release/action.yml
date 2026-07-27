@@ -1,0 +1,92 @@
+name: Validate Release
+description: Extract release metadata and validate release artifacts, changelog, and publish readiness
+inputs:
+  branch:
+    description: Release branch name (e.g. release/v1.0.1)
+    required: true
+  extract_release_notes:
+    description: Write the changelog section to a file for GitHub release notes
+    required: false
+    default: 'false'
+  release_notes_path:
+    description: Output path when extract_release_notes is true
+    required: false
+    default: '/tmp/release-notes.md'
+  check_source_release:
+    description: Fail if the source repo release does not exist
+    required: false
+    default: 'false'
+  source_repo:
+    description: Source repository (owner/name) for source release notes
+    required: false
+    default: ''
+  source_repo_pat:
+    description: GitHub token with read access to the source repo
+    required: false
+    default: ''
+  check_not_published:
+    description: Fail if this version is already published to npm or GitHub Releases
+    required: false
+    default: 'false'
+  npm_package:
+    description: npm package name (from NPM_PACKAGE secret)
+    required: false
+    default: ''
+  github_repository:
+    description: Repository to check for existing GitHub releases (owner/name)
+    required: false
+    default: ''
+  github_token:
+    description: GitHub token for release existence checks on this repo
+    required: false
+    default: ''
+outputs:
+  tag:
+    description: Release tag (vX.Y.Z)
+    value: ${{ steps.meta.outputs.tag }}
+  version:
+    description: Release version (X.Y.Z)
+    value: ${{ steps.meta.outputs.version }}
+runs:
+  using: composite
+  steps:
+    - name: Extract tag from branch
+      id: meta
+      shell: bash
+      env:
+        BRANCH: ${{ inputs.branch }}
+      run: bash "${{ github.action_path }}/scripts/extract-meta.sh"
+
+    - name: Validate release artifacts
+      shell: bash
+      env:
+        VERSION: ${{ steps.meta.outputs.version }}
+      run: bash "${{ github.action_path }}/scripts/validate-artifacts.sh"
+
+    - name: Validate changelog entry
+      shell: bash
+      env:
+        VERSION: ${{ steps.meta.outputs.version }}
+        EXTRACT_RELEASE_NOTES: ${{ inputs.extract_release_notes }}
+        RELEASE_NOTES_PATH: ${{ inputs.release_notes_path }}
+      run: python3 "${{ github.action_path }}/scripts/validate-changelog.py"
+
+    - name: Check source release exists
+      if: inputs.check_source_release == 'true'
+      shell: bash
+      env:
+        TAG: ${{ steps.meta.outputs.tag }}
+        SOURCE_REPO: ${{ inputs.source_repo }}
+        SOURCE_REPO_PAT: ${{ inputs.source_repo_pat }}
+      run: bash "${{ github.action_path }}/scripts/check-source-release.sh"
+
+    - name: Check version not already published
+      if: inputs.check_not_published == 'true'
+      shell: bash
+      env:
+        TAG: ${{ steps.meta.outputs.tag }}
+        VERSION: ${{ steps.meta.outputs.version }}
+        NPM_PACKAGE: ${{ inputs.npm_package }}
+        GITHUB_REPOSITORY: ${{ inputs.github_repository }}
+        GH_TOKEN: ${{ inputs.github_token }}
+      run: bash "${{ github.action_path }}/scripts/check-not-published.sh"

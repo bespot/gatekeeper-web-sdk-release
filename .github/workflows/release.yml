@@ -26,10 +26,9 @@ jobs:
       contents: write
       id-token: write
     outputs:
-      tag: ${{ steps.meta.outputs.tag }}
-      version: ${{ steps.meta.outputs.version }}
+      tag: ${{ steps.validate.outputs.tag }}
+      version: ${{ steps.validate.outputs.version }}
       html_url: ${{ steps.github_release.outputs.html_url }}
-      release_created: ${{ steps.github_release.outputs.release_created }}
 
     steps:
       - name: Checkout merge commit
@@ -37,81 +36,27 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.merge_commit_sha }}
 
-      - name: Extract tag from branch
-        id: meta
+      - name: Validate release
+        id: validate
+        uses: ./.github/actions/validate-release
+        with:
+          branch: ${{ github.event.pull_request.head.ref }}
+          extract_release_notes: 'true'
+          release_notes_path: /tmp/release-notes.md
+          check_source_release: 'true'
+          check_not_published: ${{ github.run_attempt == 1 && 'true' || 'false' }}
+          source_repo: ${{ secrets.SOURCE_REPO }}
+          source_repo_pat: ${{ secrets.SOURCE_REPO_PAT }}
+          npm_package: ${{ secrets.NPM_PACKAGE }}
+          github_repository: ${{ github.repository }}
+          github_token: ${{ github.token }}
+
+      - name: Preflight release secrets
         env:
-          BRANCH: ${{ github.event.pull_request.head.ref }}
-        run: |
-          set -euo pipefail
-          if ! [[ "${BRANCH}" =~ ^release/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::Branch '${BRANCH}' does not match release/vX.Y.Z convention."
-            exit 1
-          fi
-          tag="${BRANCH#release/}"
-          version="${tag#v}"
-          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
-          echo "version=${version}" >> "$GITHUB_OUTPUT"
-        shell: bash
-
-      - name: Validate release artifacts
-        env:
-          VERSION: ${{ steps.meta.outputs.version }}
-        run: |
-          set -euo pipefail
-
-          pkg_version="$(jq -r '.version' package.json)"
-          if [ "${pkg_version}" != "${VERSION}" ]; then
-            echo "::error::package.json version (${pkg_version}) does not match release tag (${VERSION})."
-            exit 1
-          fi
-
-          for f in dist/safe-sdk.esm.min.js dist/safe-sdk.umd.min.js; do
-            if [ ! -s "${f}" ]; then
-              echo "::error::${f} is missing or empty."
-              exit 1
-            fi
-          done
-
-          if [ ! -f LICENSE ]; then
-            echo "::error::LICENSE is missing."
-            exit 1
-          fi
-        shell: bash
-
-      - name: Extract changelog entry
-        id: notes
-        env:
-          VERSION: ${{ steps.meta.outputs.version }}
-        run: |
-          set -euo pipefail
-          python3 << 'PY'
-          import re, os, sys
-          content = open('CHANGELOG.md').read()
-          version = os.environ['VERSION']
-          pattern = rf'## \[{re.escape(version)}\].*?(?=\n## \[|\Z)'
-          match = re.search(pattern, content, re.DOTALL)
-          if not match:
-              print(f'::error::No CHANGELOG.md section found for [{version}]. Fill it in before merging.', file=sys.stderr)
-              sys.exit(1)
-          body = match.group(0).strip()
-          body = re.sub(r'\n+---\s*$', '', body).strip()
-          content_lines = [
-              l for l in body.splitlines()
-              if l.strip()
-              and not l.startswith('#')
-              and not l.startswith('**Upstream release:')
-          ]
-          if not content_lines:
-              print(f'::error::CHANGELOG.md section for [{version}] has no content. Fill it in before merging.', file=sys.stderr)
-              sys.exit(1)
-          with open('/tmp/release-notes.md', 'w') as f:
-              f.write(body)
-          PY
-        shell: bash
-
-      - name: Preflight notification secrets
-        env:
+          SOURCE_REPO: ${{ secrets.SOURCE_REPO }}
           SOURCE_REPO_PAT: ${{ secrets.SOURCE_REPO_PAT }}
+          NPM_PACKAGE: ${{ secrets.NPM_PACKAGE }}
+          JIRA_PROJECT: ${{ secrets.JIRA_PROJECT }}
           JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
           JIRA_SITE_URL: ${{ secrets.JIRA_SITE_URL }}
           JIRA_OAUTH_CLIENT_ID: ${{ secrets.JIRA_OAUTH_CLIENT_ID }}
@@ -120,7 +65,7 @@ jobs:
         run: |
           set -euo pipefail
           missing=0
-          for name in SOURCE_REPO_PAT JIRA_BASE_URL JIRA_OAUTH_CLIENT_ID JIRA_OAUTH_CLIENT_SECRET SLACK_WEBHOOK_URL; do
+          for name in SOURCE_REPO SOURCE_REPO_PAT NPM_PACKAGE JIRA_PROJECT JIRA_BASE_URL JIRA_OAUTH_CLIENT_ID JIRA_OAUTH_CLIENT_SECRET SLACK_WEBHOOK_URL; do
             if [ -z "${!name:-}" ]; then
               echo "::error::Missing secret: ${name}"
               missing=1
@@ -133,7 +78,7 @@ jobs:
             missing=1
           fi
           if [ "${missing}" -ne 0 ]; then
-            echo "::error::Notification secrets must be configured before publishing a new release."
+            echo "::error::Release secrets must be configured before publishing."
             exit 1
           fi
         shell: bash
@@ -141,13 +86,14 @@ jobs:
       - name: Check npm publish needed
         id: npm
         env:
-          VERSION: ${{ steps.meta.outputs.version }}
+          VERSION: ${{ steps.validate.outputs.version }}
+          NPM_PACKAGE: ${{ secrets.NPM_PACKAGE }}
         run: |
           set -euo pipefail
-          npm_version="$(npm view "@bespot/gatekeeper-web-sdk@${VERSION}" version 2>/dev/null || true)"
+          npm_version="$(npm view "${NPM_PACKAGE}@${VERSION}" version 2>/dev/null || true)"
           if [ -n "${npm_version}" ]; then
             echo "publish_needed=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::@bespot/gatekeeper-web-sdk@${VERSION} already on npm; skipping Node setup and publish."
+            echo "::notice::${NPM_PACKAGE}@${VERSION} already on npm; skipping Node setup and publish."
           else
             echo "publish_needed=true" >> "$GITHUB_OUTPUT"
           fi
@@ -163,25 +109,25 @@ jobs:
       - name: Publish to npm
         if: steps.npm.outputs.publish_needed == 'true'
         env:
-          VERSION: ${{ steps.meta.outputs.version }}
+          VERSION: ${{ steps.validate.outputs.version }}
+          NPM_PACKAGE: ${{ secrets.NPM_PACKAGE }}
         run: |
           set -euo pipefail
           npm publish --provenance --access public
-          echo "Published @bespot/gatekeeper-web-sdk@${VERSION} to npm."
+          echo "Published ${NPM_PACKAGE}@${VERSION} to npm."
         shell: bash
 
       - name: Create or update GitHub Release
         id: github_release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ steps.meta.outputs.tag }}
+          TAG: ${{ steps.validate.outputs.tag }}
         run: |
           set -euo pipefail
           sha256sum dist/safe-sdk.esm.min.js dist/safe-sdk.umd.min.js > SHA256SUMS
           if existing_url="$(gh release view "${TAG}" --json url -q '.url' 2>/dev/null)"; then
-            echo "release_created=false" >> "$GITHUB_OUTPUT"
             echo "html_url=${existing_url}" >> "$GITHUB_OUTPUT"
-            echo "::notice::GitHub release ${TAG} already exists; updating assets only. Jira/Slack notifications will be skipped."
+            echo "::notice::GitHub release ${TAG} already exists; updating assets only."
             gh release edit "${TAG}" \
               --title "${TAG}" \
               --notes-file /tmp/release-notes.md
@@ -191,7 +137,6 @@ jobs:
               SHA256SUMS \
               --clobber
           else
-            echo "release_created=true" >> "$GITHUB_OUTPUT"
             gh release create "${TAG}" \
               --title "${TAG}" \
               --notes-file /tmp/release-notes.md \
@@ -208,8 +153,7 @@ jobs:
     needs: create-release
     if: >-
       always() &&
-      needs['create-release'].result == 'success' &&
-      needs['create-release'].outputs.release_created == 'true'
+      needs['create-release'].result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {}
@@ -217,16 +161,21 @@ jobs:
       tickets: ${{ steps.parse.outputs.tickets }}
       slack_section: ${{ steps.parse.outputs.slack_section }}
     steps:
-      - name: Parse upstream release notes for FRD tickets
+      - name: Parse source release notes for Jira tickets
         id: parse
         env:
           TAG: ${{ needs.create-release.outputs.tag }}
           SOURCE_REPO_PAT: ${{ secrets.SOURCE_REPO_PAT }}
-          UPSTREAM_REPO: bespot/gatekeeper-web-sdk
+          SOURCE_REPO: ${{ secrets.SOURCE_REPO }}
+          JIRA_PROJECT: ${{ secrets.JIRA_PROJECT }}
           JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
           JIRA_SITE_URL: ${{ secrets.JIRA_SITE_URL }}
         run: |
           set -euo pipefail
+          if [ -z "${JIRA_PROJECT:-}" ]; then
+            echo "::error::Missing secret: JIRA_PROJECT"
+            exit 1
+          fi
           if [[ "${JIRA_BASE_URL:-}" == *"api.atlassian.com/ex/jira/"* ]] && [ -z "${JIRA_SITE_URL:-}" ]; then
             echo "::error::JIRA_SITE_URL is required when JIRA_BASE_URL is the OAuth gateway URL (e.g. https://bespot.atlassian.net)."
             exit 1
@@ -239,29 +188,30 @@ jobs:
           while [ "${attempt}" -le "${max_attempts}" ]; do
             if release_body="$(
               GH_TOKEN="${SOURCE_REPO_PAT}" gh release view "${TAG}" \
-                --repo "${UPSTREAM_REPO}" \
+                --repo "${SOURCE_REPO}" \
                 --json body \
                 -q '.body // ""' 2>/dev/null
             )"; then
               break
             fi
             if [ "${attempt}" -eq "${max_attempts}" ]; then
-              echo "::error::Failed to fetch release notes from ${UPSTREAM_REPO} for ${TAG} after ${max_attempts} attempts."
+              echo "::error::Failed to fetch release notes from ${SOURCE_REPO} for ${TAG} after ${max_attempts} attempts."
               exit 1
             fi
-            echo "::warning::Upstream release fetch failed (attempt ${attempt}/${max_attempts}); retrying in ${delay}s..."
+            echo "::warning::Source release fetch failed (attempt ${attempt}/${max_attempts}); retrying in ${delay}s..."
             sleep "${delay}"
             attempt=$((attempt + 1))
             delay=$((delay * 2))
           done
 
           parsed="$(
-            RELEASE_BODY="${release_body}" python3 <<'PY'
+            RELEASE_BODY="${release_body}" JIRA_PROJECT="${JIRA_PROJECT}" python3 <<'PY'
           import json
           import os
           import re
 
           body = os.environ.get("RELEASE_BODY", "")
+          jira_project = os.environ.get("JIRA_PROJECT", "")
           jira_api_base = os.environ.get("JIRA_BASE_URL", "").rstrip("/")
           jira_site = os.environ.get("JIRA_SITE_URL", "").rstrip("/")
           if not jira_site:
@@ -269,12 +219,13 @@ jobs:
                   jira_site = jira_api_base
           jira_base = jira_site
 
+          key_pattern = re.compile(rf"({re.escape(jira_project)}-\d+)")
           bullets: list[dict[str, str]] = []
           for line in body.splitlines():
               stripped = line.strip()
               if not stripped.startswith("*"):
                   continue
-              key_match = re.search(r"(FRD-\d+)", stripped)
+              key_match = key_pattern.search(stripped)
               if not key_match:
                   continue
               key = key_match.group(1)
@@ -307,7 +258,7 @@ jobs:
                   else:
                       lines.append(f"• {key} - {title}")
           else:
-              lines.append("_No FRD tickets found in this release changelog._")
+              lines.append(f"_No {jira_project} tickets found in this release changelog._")
 
           print(
               json.dumps(
@@ -335,11 +286,11 @@ jobs:
     if: >-
       always() &&
       needs['create-release'].result == 'success' &&
-      needs['create-release'].outputs.release_created == 'true' &&
       needs['changelog-parsing'].result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    permissions: {}
+    permissions:
+      actions: read
     outputs:
       version_url: ${{ steps.jira.outputs.version_url }}
       version_name: ${{ steps.jira.outputs.version_name }}
@@ -354,12 +305,21 @@ jobs:
           JIRA_SITE_URL: ${{ secrets.JIRA_SITE_URL }}
           JIRA_OAUTH_CLIENT_ID: ${{ secrets.JIRA_OAUTH_CLIENT_ID }}
           JIRA_OAUTH_CLIENT_SECRET: ${{ secrets.JIRA_OAUTH_CLIENT_SECRET }}
-          JIRA_PROJECT: FRD
+          JIRA_PROJECT: ${{ secrets.JIRA_PROJECT }}
+          GH_TOKEN: ${{ github.token }}
+          JOB_DISPLAY_NAME: Jira Release
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
         run: |
           set -euo pipefail
           VERSION_NAME="${VERSION}-web"
           echo "version_name=${VERSION_NAME}" >> "$GITHUB_OUTPUT"
 
+          if [ -z "${JIRA_PROJECT:-}" ]; then
+            echo "::error::Missing secret: JIRA_PROJECT"
+            exit 1
+          fi
           if [ -z "${JIRA_BASE_URL:-}" ] || [ -z "${JIRA_OAUTH_CLIENT_ID:-}" ] || [ -z "${JIRA_OAUTH_CLIENT_SECRET:-}" ]; then
             echo "::error::Jira release requires secrets: JIRA_BASE_URL, JIRA_OAUTH_CLIENT_ID, JIRA_OAUTH_CLIENT_SECRET."
             exit 1
@@ -382,16 +342,14 @@ jobs:
             curl --retry 3 --retry-delay 5 --retry-all-errors -sS "$@"
           }
 
-          JIRA_ACCESS_TOKEN="$(
+          obtain_jira_token() {
             curl_retry -f -X POST 'https://auth.atlassian.com/oauth/token' \
               -H 'Content-Type: application/x-www-form-urlencoded' \
               --data-urlencode 'grant_type=client_credentials' \
               --data-urlencode "client_id=${JIRA_OAUTH_CLIENT_ID}" \
               --data-urlencode "client_secret=${JIRA_OAUTH_CLIENT_SECRET}" \
               | jq -e -r '.access_token'
-          )"
-          echo "::add-mask::${JIRA_ACCESS_TOKEN}"
-          echo "Obtained Jira OAuth access token (github-actions service account)."
+          }
 
           jira_api() {
             local method="$1"
@@ -408,6 +366,41 @@ jobs:
             curl_retry "${args[@]}" "${JIRA_API_URL}${path}"
           }
 
+          lookup_version_id() {
+            jira_api GET "/rest/api/3/project/${JIRA_PROJECT}/versions" \
+              | jq -r --arg name "${VERSION_NAME}" '.[] | select(.name == $name) | .id' \
+              | head -n 1
+          }
+
+          publish_version_outputs() {
+            local version_id="$1"
+            if [ -z "${version_id}" ] || [ "${version_id}" = "null" ]; then
+              echo "::error::Could not find Jira fix version ${VERSION_NAME}."
+              exit 1
+            fi
+            VERSION_URL="${JIRA_SITE_URL}/projects/${JIRA_PROJECT}/versions/${version_id}"
+            echo "version_url=${VERSION_URL}" >> "$GITHUB_OUTPUT"
+          }
+
+          if [ "${RUN_ATTEMPT}" -gt 1 ]; then
+            for prev in $(seq 1 $((RUN_ATTEMPT - 1))); do
+              conclusion="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/attempts/${prev}/jobs" \
+                --jq ".jobs[] | select(.name == \"${JOB_DISPLAY_NAME}\") | .conclusion" 2>/dev/null | head -n 1 || true)"
+              if [ "${conclusion}" = "success" ]; then
+                echo "::notice::Jira release already succeeded in attempt ${prev}; restoring outputs."
+                JIRA_ACCESS_TOKEN="$(obtain_jira_token)"
+                echo "::add-mask::${JIRA_ACCESS_TOKEN}"
+                VERSION_ID="$(lookup_version_id || true)"
+                publish_version_outputs "${VERSION_ID}"
+                exit 0
+              fi
+            done
+          fi
+
+          JIRA_ACCESS_TOKEN="$(obtain_jira_token)"
+          echo "::add-mask::${JIRA_ACCESS_TOKEN}"
+          echo "Obtained Jira OAuth access token (github-actions service account)."
+
           if [ -n "${TICKETS_CSV}" ]; then
             IFS=',' read -r -a TICKETS <<< "${TICKETS_CSV}"
           else
@@ -422,11 +415,7 @@ jobs:
           fi
           RELEASE_DATE="$(date -u +%Y-%m-%d)"
 
-          VERSION_ID="$(
-            jira_api GET "/rest/api/3/project/${JIRA_PROJECT}/versions" \
-              | jq -r --arg name "${VERSION_NAME}" '.[] | select(.name == $name) | .id' \
-              | head -n 1 || true
-          )"
+          VERSION_ID="$(lookup_version_id || true)"
 
           if [ -n "${VERSION_ID}" ]; then
             echo "Reusing existing Jira fix version ${VERSION_NAME} (${VERSION_ID})"
@@ -445,8 +434,7 @@ jobs:
             echo "Created Jira fix version ${VERSION_NAME} (${VERSION_ID})"
           fi
 
-          VERSION_URL="${JIRA_SITE_URL}/projects/${JIRA_PROJECT}/versions/${VERSION_ID}"
-          echo "version_url=${VERSION_URL}" >> "$GITHUB_OUTPUT"
+          publish_version_outputs "${VERSION_ID}"
 
           link_failures=0
           for KEY in "${TICKETS[@]}"; do
@@ -465,9 +453,10 @@ jobs:
           done
 
           if [ "${#TICKETS[@]}" -eq 0 ]; then
-            echo "::notice::No FRD-* keys in changelog bullets; fix version created without linked issues."
+            echo "::notice::No ${JIRA_PROJECT}-* keys in changelog bullets; fix version created without linked issues."
           elif [ "${link_failures}" -gt 0 ]; then
-            echo "::warning::${link_failures} ticket(s) could not be linked to ${VERSION_NAME}."
+            echo "::error::${link_failures} ticket(s) could not be linked to ${VERSION_NAME}."
+            exit 1
           fi
         shell: bash
 
@@ -480,16 +469,40 @@ jobs:
     if: >-
       always() &&
       needs['create-release'].result == 'success' &&
-      needs['create-release'].outputs.release_created == 'true' &&
       needs['changelog-parsing'].result == 'success' &&
       needs['jira-release'].result == 'success' &&
       needs['jira-release'].outputs.version_url != ''
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions: {}
+    permissions:
+      actions: read
 
     steps:
+      - name: Skip if already notified in prior attempt
+        id: prior
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_DISPLAY_NAME: Slack Release
+        run: |
+          set -euo pipefail
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+          attempt="${{ github.run_attempt }}"
+          if [ "${attempt}" -le 1 ]; then
+            exit 0
+          fi
+          for prev in $(seq 1 $((attempt - 1))); do
+            conclusion="$(gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${prev}/jobs" \
+              --jq ".jobs[] | select(.name == \"${JOB_DISPLAY_NAME}\") | .conclusion" 2>/dev/null | head -n 1 || true)"
+            if [ "${conclusion}" = "success" ]; then
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+              echo "::notice::Slack was already notified in attempt ${prev}; skipping duplicate message."
+              exit 0
+            fi
+          done
+        shell: bash
+
       - name: Build and send Slack notification
+        if: steps.prior.outputs.skip != 'true'
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           VERSION: ${{ needs.create-release.outputs.version }}
@@ -537,4 +550,40 @@ jobs:
             -H 'Content-type: application/json' \
             --data "${blocks}" \
             "${SLACK_WEBHOOK_URL}"
+        shell: bash
+
+  release-complete:
+    name: Release Complete
+    needs:
+      - create-release
+      - changelog-parsing
+      - jira-release
+      - slack-release
+    if: always() && needs['create-release'].result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+
+    steps:
+      - name: Verify release pipeline completed
+        run: |
+          set -euo pipefail
+          failures=0
+          if [ "${{ needs['changelog-parsing'].result }}" != "success" ]; then
+            echo "::error::Required job 'changelog-parsing' did not succeed (result: ${{ needs['changelog-parsing'].result }})."
+            failures=1
+          fi
+          if [ "${{ needs['jira-release'].result }}" != "success" ]; then
+            echo "::error::Required job 'jira-release' did not succeed (result: ${{ needs['jira-release'].result }})."
+            failures=1
+          fi
+          if [ "${{ needs['slack-release'].result }}" != "success" ]; then
+            echo "::error::Required job 'slack-release' did not succeed (result: ${{ needs['slack-release'].result }})."
+            failures=1
+          fi
+          if [ "${failures}" -ne 0 ]; then
+            echo "::error::Release publish succeeded but notification pipeline did not complete."
+            exit 1
+          fi
+          echo "Release pipeline completed successfully."
         shell: bash
