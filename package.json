@@ -1,9 +1,13 @@
 {
   "name": "@bespot/gatekeeper-web-sdk",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Bespot Gatekeeper Web SDK",
+  "license": "SEE LICENSE IN LICENSE",
   "private": false,
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "exports": {
     ".": {
       "import": "./dist/safe-sdk.esm.min.js",
