@@ -536,6 +536,7 @@ jobs:
         id: prior
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
           JOB_DISPLAY_NAME: Slack Release
           VERSION: ${{ needs.create-release.outputs.version }}
         run: |
@@ -543,7 +544,9 @@ jobs:
           echo "skip=false" >> "$GITHUB_OUTPUT"
           tag="v${VERSION}"
 
-          if gh release view "${tag}" --json assets -q '.assets[].name' 2>/dev/null | grep -qx 'SLACK_NOTIFIED'; then
+          # No checkout in this job — GH_REPO is required for gh release commands.
+          assets="$(gh release view "${tag}" --json assets -q '.assets[].name')"
+          if printf '%s\n' "${assets}" | grep -qx 'SLACK_NOTIFIED'; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
             echo "::notice::Slack already notified for ${tag} (SLACK_NOTIFIED marker on GitHub Release); skipping."
             exit 0
@@ -554,7 +557,7 @@ jobs:
             exit 0
           fi
           for prev in $(seq 1 $((attempt - 1))); do
-            conclusion="$(gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${prev}/jobs" \
+            conclusion="$(gh api "repos/${GH_REPO}/actions/runs/${{ github.run_id }}/attempts/${prev}/jobs" \
               --jq ".jobs[] | select(.name == \"${JOB_DISPLAY_NAME}\") | .conclusion" 2>/dev/null | head -n 1 || true)"
             if [ "${conclusion}" = "success" ]; then
               echo "skip=true" >> "$GITHUB_OUTPUT"
@@ -569,6 +572,7 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
           VERSION: ${{ needs.create-release.outputs.version }}
           HTML_URL_HEX: ${{ needs.create-release.outputs.html_url }}
           SLACK_SECTION_HEX: ${{ needs.changelog-parsing.outputs.slack_section }}
@@ -618,7 +622,7 @@ jobs:
             "${SLACK_WEBHOOK_URL}"
 
           # Durable cross-run marker so workflow_dispatch retries do not re-post.
-          # GitHub rejects empty (0-byte) release assets.
+          # GitHub rejects empty (0-byte) release assets. GH_REPO required (no checkout).
           tag="v${VERSION}"
           marker="$(mktemp)"
           printf 'notified\n' > "${marker}"
