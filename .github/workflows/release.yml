@@ -618,9 +618,10 @@ jobs:
             "${SLACK_WEBHOOK_URL}"
 
           # Durable cross-run marker so workflow_dispatch retries do not re-post.
+          # GitHub rejects empty (0-byte) release assets.
           tag="v${VERSION}"
           marker="$(mktemp)"
-          : > "${marker}"
+          printf 'notified\n' > "${marker}"
           gh release upload "${tag}" "${marker}#SLACK_NOTIFIED" --clobber
           rm -f "${marker}"
           echo "::notice::Recorded SLACK_NOTIFIED on GitHub Release ${tag}."
