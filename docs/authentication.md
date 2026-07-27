@@ -28,11 +28,11 @@ See [Runtime configuration](integration-guide.md#5-runtime-configuration).
 
 ### Backend-only (JWT issuance)
 
-Your server uses these to call the auth issuer. **Never expose `client_secret` in browser code.**
+Your server uses these to request access tokens via the Kerberos OAuth2 proxy on your Gatekeeper API host. **Never expose `client_secret` in browser code.**
 
 | Name | Purpose |
 |------|---------|
-| `AUTH_SERVER_URL` | Gatekeeper API root — same host as SDK `baseUrl` (e.g. `https://gatekeeper.bespotcompany.com`)|
+| `AUTH_SERVER_URL` | Gatekeeper API root — same host as SDK `baseUrl` (e.g. `https://gatekeeper.bespotcompany.com`) |
 | `CLIENT_ID` | OAuth client id |
 | `CLIENT_SECRET` | OAuth client secret — server only |
 | `SCOPE` | OAuth scope (e.g. `main_antifraud_resource_server/public`) |
