@@ -56,9 +56,13 @@ jobs:
             fi
             branch="release/v${version}"
             tag="v${version}"
-            if gh release view "${tag}" >/dev/null 2>&1; then
+            # Runs before checkout — always pass --repo (no git remote yet).
+            if gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${tag}" >/dev/null 2>&1; then
               checkout_ref="${tag}"
               echo "Using tag ${tag}."
+            elif gh release view "${tag}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+              checkout_ref="${tag}"
+              echo "Using GitHub release tag ${tag}."
             else
               encoded_branch="$(printf '%s' "${branch}" | jq -sRr @uri)"
               if gh api "repos/${GITHUB_REPOSITORY}/branches/${encoded_branch}" >/dev/null 2>&1; then
