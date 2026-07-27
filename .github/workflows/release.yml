@@ -176,7 +176,7 @@ jobs:
           set -euo pipefail
           sha256sum dist/safe-sdk.esm.min.js dist/safe-sdk.umd.min.js > SHA256SUMS
           if existing_url="$(gh release view "${TAG}" --json url -q '.url' 2>/dev/null)"; then
-            echo "html_url=$(printf '%s' "${existing_url}" | base64 -w0)" >> "$GITHUB_OUTPUT"
+            echo "html_url=$(printf '%s' "${existing_url}" | python3 -c 'import sys; print(sys.stdin.buffer.read().hex(), end="")')" >> "$GITHUB_OUTPUT"
             echo "::notice::GitHub release ${TAG} already exists; refreshing release notes and assets."
             gh release edit "${TAG}" \
               --title "${TAG}" \
@@ -194,7 +194,7 @@ jobs:
               dist/safe-sdk.umd.min.js \
               SHA256SUMS
             html_url="$(gh release view "${TAG}" --json url -q '.url')"
-            echo "html_url=$(printf '%s' "${html_url}" | base64 -w0)" >> "$GITHUB_OUTPUT"
+            echo "html_url=$(printf '%s' "${html_url}" | python3 -c 'import sys; print(sys.stdin.buffer.read().hex(), end="")')" >> "$GITHUB_OUTPUT"
           fi
         shell: bash
 
@@ -322,15 +322,11 @@ jobs:
           )"
           tickets="$(echo "${parsed}" | jq -r '.tickets')"
           slack_section="$(echo "${parsed}" | jq -r '.slack_section')"
-          # Base64-encode outputs so GitHub Actions does not drop them when they
+          # Hex-encode outputs so GitHub Actions does not drop them when they
           # contain secret substrings (e.g. FRD-1542 contains JIRA_PROJECT, URLs
-          # contain JIRA_SITE_URL).
-          echo "tickets=$(printf '%s' "${tickets}" | base64 -w0)" >> "$GITHUB_OUTPUT"
-          {
-            echo 'slack_section<<EOF'
-            printf '%s' "$(printf '%s' "${slack_section}" | base64 -w0)"
-            echo 'EOF'
-          } >> "$GITHUB_OUTPUT"
+          # contain JIRA_SITE_URL). Use single-line outputs (no heredoc).
+          echo "tickets=$(printf '%s' "${tickets}" | python3 -c 'import sys; print(sys.stdin.buffer.read().hex(), end="")')" >> "$GITHUB_OUTPUT"
+          echo "slack_section=$(printf '%s' "${slack_section}" | python3 -c 'import sys; print(sys.stdin.buffer.read().hex(), end="")')" >> "$GITHUB_OUTPUT"
         shell: bash
 
   jira-release:
@@ -353,7 +349,7 @@ jobs:
         id: jira
         env:
           VERSION: ${{ needs.create-release.outputs.version }}
-          TICKETS_CSV_B64: ${{ needs.changelog-parsing.outputs.tickets }}
+          TICKETS_CSV_HEX: ${{ needs.changelog-parsing.outputs.tickets }}
           JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
           JIRA_SITE_URL: ${{ secrets.JIRA_SITE_URL }}
           JIRA_OAUTH_CLIENT_ID: ${{ secrets.JIRA_OAUTH_CLIENT_ID }}
@@ -369,8 +365,8 @@ jobs:
           VERSION_NAME="${VERSION}-web"
           echo "version_name=${VERSION_NAME}" >> "$GITHUB_OUTPUT"
           TICKETS_CSV=""
-          if [ -n "${TICKETS_CSV_B64:-}" ]; then
-            TICKETS_CSV="$(printf '%s' "${TICKETS_CSV_B64}" | base64 -d)"
+          if [ -n "${TICKETS_CSV_HEX:-}" ]; then
+            TICKETS_CSV="$(printf '%s' "${TICKETS_CSV_HEX}" | python3 -c 'import sys; print(bytes.fromhex(sys.stdin.read().strip()).decode(), end="")')"
           fi
 
           if [ -z "${JIRA_PROJECT:-}" ]; then
@@ -436,7 +432,7 @@ jobs:
               exit 1
             fi
             VERSION_URL="${JIRA_SITE_URL}/projects/${JIRA_PROJECT}/versions/${version_id}"
-            echo "version_url=$(printf '%s' "${VERSION_URL}" | base64 -w0)" >> "$GITHUB_OUTPUT"
+            echo "version_url=$(printf '%s' "${VERSION_URL}" | python3 -c 'import sys; print(sys.stdin.buffer.read().hex(), end="")')" >> "$GITHUB_OUTPUT"
           }
 
           if [ "${RUN_ATTEMPT}" -gt 1 ]; then
@@ -563,9 +559,9 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           VERSION: ${{ needs.create-release.outputs.version }}
-          HTML_URL_B64: ${{ needs.create-release.outputs.html_url }}
-          SLACK_SECTION_B64: ${{ needs.changelog-parsing.outputs.slack_section }}
-          JIRA_VERSION_URL_B64: ${{ needs.jira-release.outputs.version_url }}
+          HTML_URL_HEX: ${{ needs.create-release.outputs.html_url }}
+          SLACK_SECTION_HEX: ${{ needs.changelog-parsing.outputs.slack_section }}
+          JIRA_VERSION_URL_HEX: ${{ needs.jira-release.outputs.version_url }}
           JIRA_VERSION_NAME: ${{ needs.jira-release.outputs.version_name }}
         run: |
           set -euo pipefail
@@ -573,9 +569,9 @@ jobs:
             echo "::error::Slack release requires secret: SLACK_WEBHOOK_URL."
             exit 1
           fi
-          HTML_URL="$(printf '%s' "${HTML_URL_B64:-}" | base64 -d)"
-          section_text="$(printf '%s' "${SLACK_SECTION_B64:-}" | base64 -d)"
-          JIRA_VERSION_URL="$(printf '%s' "${JIRA_VERSION_URL_B64:-}" | base64 -d)"
+          HTML_URL="$(printf '%s' "${HTML_URL_HEX:-}" | python3 -c 'import sys; print(bytes.fromhex(sys.stdin.read().strip()).decode(), end="")')"
+          section_text="$(printf '%s' "${SLACK_SECTION_HEX:-}" | python3 -c 'import sys; print(bytes.fromhex(sys.stdin.read().strip()).decode(), end="")')"
+          JIRA_VERSION_URL="$(printf '%s' "${JIRA_VERSION_URL_HEX:-}" | python3 -c 'import sys; print(bytes.fromhex(sys.stdin.read().strip()).decode(), end="")')"
 
           # Slack section text is capped at 3000 characters.
           if [ "${#section_text}" -gt 2900 ]; then
