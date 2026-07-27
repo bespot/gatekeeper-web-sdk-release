@@ -7,6 +7,7 @@ on:
       - edited
       - synchronize
       - reopened
+      - ready_for_review
     branches:
       - main
 
@@ -19,7 +20,10 @@ env:
 jobs:
   validate:
     name: Validate Release PR
-    if: startsWith(github.event.pull_request.head.ref, 'release/')
+    # Skip drafts so auto-opened release PRs can be finished without failing checks.
+    if: >-
+      startsWith(github.event.pull_request.head.ref, 'release/') &&
+      github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 10
     concurrency:
