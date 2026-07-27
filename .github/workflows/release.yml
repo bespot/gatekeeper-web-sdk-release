@@ -529,16 +529,26 @@ jobs:
     timeout-minutes: 5
     permissions:
       actions: read
+      contents: write
 
     steps:
-      - name: Skip if already notified in prior attempt
+      - name: Skip if Slack already notified for this version
         id: prior
         env:
           GH_TOKEN: ${{ github.token }}
           JOB_DISPLAY_NAME: Slack Release
+          VERSION: ${{ needs.create-release.outputs.version }}
         run: |
           set -euo pipefail
           echo "skip=false" >> "$GITHUB_OUTPUT"
+          tag="v${VERSION}"
+
+          if gh release view "${tag}" --json assets -q '.assets[].name' 2>/dev/null | grep -qx 'SLACK_NOTIFIED'; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Slack already notified for ${tag} (SLACK_NOTIFIED marker on GitHub Release); skipping."
+            exit 0
+          fi
+
           attempt="${{ github.run_attempt }}"
           if [ "${attempt}" -le 1 ]; then
             exit 0
@@ -558,6 +568,7 @@ jobs:
         if: steps.prior.outputs.skip != 'true'
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          GH_TOKEN: ${{ github.token }}
           VERSION: ${{ needs.create-release.outputs.version }}
           HTML_URL_HEX: ${{ needs.create-release.outputs.html_url }}
           SLACK_SECTION_HEX: ${{ needs.changelog-parsing.outputs.slack_section }}
@@ -605,6 +616,14 @@ jobs:
             -H 'Content-type: application/json' \
             --data "${blocks}" \
             "${SLACK_WEBHOOK_URL}"
+
+          # Durable cross-run marker so workflow_dispatch retries do not re-post.
+          tag="v${VERSION}"
+          marker="$(mktemp)"
+          : > "${marker}"
+          gh release upload "${tag}" "${marker}#SLACK_NOTIFIED" --clobber
+          rm -f "${marker}"
+          echo "::notice::Recorded SLACK_NOTIFIED on GitHub Release ${tag}."
         shell: bash
 
   release-complete:
