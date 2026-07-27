@@ -8,8 +8,8 @@ How SDK package versions relate to your application configuration.
 
 | Term | Example | What it is |
 |------|---------|------------|
-| **SDK package version** | `1.0.0` in `@bespot/gatekeeper-web-sdk@1.0.0` | Version of the JavaScript bundle published in this repository |
-| **Application version** | `1.0.0` in `SafeSDK` config | Your app identity in Gatekeeper API URL paths |
+| **SDK package version** | `1.0.2` in `@bespot/gatekeeper-web-sdk@1.0.2` | Version of the JavaScript bundle published in this repository |
+| **Application version** | `2.0.0` in `SafeSDK` config | Your app identity in Gatekeeper API URL paths |
 
 They are **independent**. Upgrading the SDK does not change your `applicationVersion` unless you choose to update it in Bespot and in your config.
 

@@ -4,6 +4,21 @@ All notable changes to the distributed Gatekeeper Web SDK packages in this repos
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] - 2026-07-27
+
+**Upstream release:** [v1.0.2](https://github.com/bespot/gatekeeper-web-sdk/releases/tag/v1.0.2)
+
+### Added
+
+- SHA256 checksums (`SHA256SUMS`) published with each release for verifying bundle integrity
+
+### Changed
+
+- **Breaking:** Access tokens should be requested via `POST /oauth2/token` on your Gatekeeper API host (Kerberos proxy), not the Cognito issuer URL directly
+- **Breaking:** Token request failures now return `error_code` and `description` instead of an OAuth `error` field — update server-side error handling if you parse token errors
+
+---
+
 ## [1.0.1] - 2026-06-24
 
 **Upstream release:** [v1.0.1](https://github.com/bespot/gatekeeper-web-sdk/releases/tag/v1.0.1)

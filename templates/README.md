@@ -8,7 +8,7 @@ Starter files for Gatekeeper Web SDK integration. Copy into your project and rep
    - `npm install @bespot/gatekeeper-web-sdk` and locate `dist/` in `node_modules/@bespot/gatekeeper-web-sdk`, **or**
    - Download `safe-sdk.esm.min.js` / `safe-sdk.umd.min.js` from [GitHub Releases](https://github.com/bespot/gatekeeper-web-sdk-release/releases)
 2. Place the bundle file(s) where your web server can serve them (or adjust the paths in the HTML files).
-3. Implement a backend endpoint that returns a JWT (e.g. `/api/gatekeeper-token`).
+3. Implement a backend endpoint that returns a JWT (e.g. `/api/gatekeeper-token`). Your backend requests tokens from `POST {baseUrl}/oauth2/token` — see [Authentication](../docs/authentication.md).
 
 ## Files
 

@@ -22,17 +22,17 @@ Set on every page before or when constructing `SafeSDK`:
 | `apiKey` | `x-api-key` on Gatekeeper requests |
 | `applicationId` | URL path segment |
 | `applicationVersion` | URL path segment |
-| `baseUrl` | Gatekeeper API root (no `/` at the end). Sample: `bespot-gatekeeper-base-url` (e.g. `https://gatekeeper.bespotcompany.com`) |
+| `baseUrl` | Gatekeeper API root (e.g. `https://gatekeeper.bespotcompany.com`). Trailing slashes are stripped automatically. |
 
 See [Runtime configuration](integration-guide.md#5-runtime-configuration).
 
 ### Backend-only (JWT issuance)
 
-Your server uses these to call the auth issuer. **Never expose `client_secret` in browser code.**
+Your server uses these to request access tokens via the Kerberos OAuth2 proxy on your Gatekeeper API host. **Never expose `client_secret` in browser code.**
 
 | Name | Purpose |
 |------|---------|
-| `AUTH_SERVER_URL` | Auth issuer base URL (e.g. `https://gatekeeper.auth.eu-west-1.amazoncognito.com`) |
+| `AUTH_SERVER_URL` | Gatekeeper API root — same host as SDK `baseUrl` (e.g. `https://gatekeeper.bespotcompany.com`) |
 | `CLIENT_ID` | OAuth client id |
 | `CLIENT_SECRET` | OAuth client secret — server only |
 | `SCOPE` | OAuth scope (e.g. `main_antifraud_resource_server/public`) |
@@ -45,7 +45,7 @@ The API key in SDK config is for **Gatekeeper** requests, not the OAuth token ex
 
 ```text
 Browser  →  GET /api/your-gatekeeper-token  →  Your server
-Your server  →  POST /oauth2/token (with client_secret)  →  Auth server
+Your server  →  POST /oauth2/token (with client_secret)  →  Gatekeeper API (Kerberos proxy)
 Your server  →  returns access_token  →  Browser
 Browser  →  sdk.initialize(access_token)
 ```
@@ -53,6 +53,8 @@ Browser  →  sdk.initialize(access_token)
 ---
 
 ## Server-side token request
+
+Kerberos exposes `POST /oauth2/token` on your Gatekeeper API host (for example `https://gatekeeper.bespotcompany.com/oauth2/token`).
 
 Your backend performs this call (not the browser):
 
@@ -64,7 +66,7 @@ Authorization: Basic Base64(client_id:client_secret)
 grant_type=client_credentials&scope={SCOPE}
 ```
 
-### Example response
+### Success response
 
 ```json
 {
@@ -79,6 +81,29 @@ grant_type=client_credentials&scope={SCOPE}
 | `access_token` | JWT string — pass to `sdk.initialize()` or `sdk.setAccessToken()` |
 | `expires_in` | Lifetime in **seconds** — schedule refresh before expiry |
 | `token_type` | `Bearer` — SDK sends `Authorization: Bearer {access_token}` |
+
+### Error response
+
+Failures use the platform `ErrorResponse` shape (`error_code` + `description`), not RFC OAuth2 `{"error": "..."}`:
+
+```json
+{
+  "error_code": "invalid-client",
+  "description": "Invalid client credentials"
+}
+```
+
+| HTTP | `error_code` | Default `description` |
+|------|--------------|------------------------|
+| 400 | `invalid-request` | Invalid OAuth2 request |
+| 400 | `unsupported-grant-type` | Only `client_credentials` is supported. |
+| 401 | `invalid-client` | Invalid client credentials |
+| 401 | `invalid-grant` | Invalid client credentials |
+| 401 | `unauthorized-client` | Invalid client credentials |
+| 502 | `invalid-response` | Upstream token provider returned an invalid response |
+| 500 | `unknown` | Unknown server error |
+
+Parse `error_code` and `description` on non-2xx responses. The `error` field is not returned on this endpoint.
 
 ### Browser usage
 

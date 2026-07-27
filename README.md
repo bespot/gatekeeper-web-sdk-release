@@ -85,13 +85,16 @@ Starter pages: [templates/integration-esm.html](templates/integration-esm.html),
 ## Network behavior
 
 This SDK makes **runtime-only** HTTPS requests to the Gatekeeper API URL you configure in
-`baseUrl` (typically `/register` and `/check`).
+`baseUrl`:
+
+- `POST /device/{applicationId}/{applicationVersion}/register` — on `initialize()`
+- `POST /device/{applicationId}/{applicationVersion}/check` — on `check()` and periodic checks
 
 - No install scripts (`preinstall`, `postinstall`, etc.)
 - No network activity during `npm install`
 - Network requests occur during `initialize()`, `check()`, and optionally during periodic
   checks if you call `subscribe()` (see [periodic checks](docs/integration-guide.md#periodic-checks))
-- Requests use the browser `fetch` API with your API key and JWT
+- Requests use the browser `fetch` API with a 30-second timeout, your API key, and JWT
 
 This behavior is required for Gatekeeper fraud and location checks.
 
@@ -119,6 +122,8 @@ required by applicable privacy law and your policies.
 
 Published npm and GitHub Release artifacts are intentionally **minified** production bundles
 (`safe-sdk.esm.min.js`, `safe-sdk.umd.min.js`). Source maps are not included in the npm package.
+
+Each GitHub Release includes `SHA256SUMS` for verifying bundle integrity.
 
 ## License
 
