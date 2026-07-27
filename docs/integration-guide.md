@@ -44,7 +44,7 @@ The SDK is a **single class** named `SafeSDK`. It is a **singleton**: every `new
 |---------------|---------|
 | "I set credentials in a `.env` file and the bundle reads them." | **Wrong.** The JavaScript bundle contains **no** API key, application ID, or backend URL. You must supply them in your page or a config script at runtime. |
 | "I can put `client_secret` in frontend code to get a JWT." | **Wrong.** OAuth secrets belong on **your server** only. The browser receives a short-lived JWT from your backend. |
-| "`check()` throws when something fails." | **Wrong.** `check()` **returns** an `Error` object on failure. Only `initialize()` **throws**. |
+| "`check()` throws when something fails." | **Wrong.** `check()` **returns** an `Error` object on failure. `initialize`, `setAccessToken`, and `subscribe()` (before a successful `initialize`) **throw**. |
 | "I can call `check()` before `initialize()`." | **Wrong.** `check()` returns `NotInitialized` until `initialize()` completes successfully. |
 
 ---
@@ -73,11 +73,11 @@ Collect these values:
 
 ### Backend-only credentials (for JWT issuance — not in the browser)
 
-Your server uses these to call the auth issuer. The browser never sees `client_secret`.
+Your server uses these to request access tokens via the Kerberos OAuth2 proxy (`POST {AUTH_SERVER_URL}/oauth2/token`). See [Authentication](authentication.md) for the full flow. The browser never sees `client_secret`.
 
 | Name | Purpose |
 |------|---------|
-| `AUTH_SERVER_URL` | Auth issuer base URL (e.g. `https://gatekeeper.auth.eu-west-1.amazoncognito.com`) |
+| `AUTH_SERVER_URL` | Gatekeeper API root — same host as SDK `baseUrl` (e.g. `https://gatekeeper.bespotcompany.com`). Do not call Cognito directly. |
 | `CLIENT_ID` | OAuth client id |
 | `CLIENT_SECRET` | OAuth client secret — **server only** |
 | `SCOPE` | OAuth scope (e.g. `main_antifraud_resource_server/public`) |
@@ -141,7 +141,7 @@ The SDK needs **four non-empty strings** before it can talk to Gatekeeper. If an
 
 | Field | Description |
 |-------|-------------|
-| `baseUrl` | Gatekeeper API root (no `/` at the end). Sample: `bespot-gatekeeper-base-url` (e.g. `https://gatekeeper.bespotcompany.com`) |
+| `baseUrl` | Gatekeeper API root (e.g. `https://gatekeeper.bespotcompany.com`). Trailing slashes are stripped automatically. |
 | `apiKey` | Your Bespot API key. Sample: `your-api-key` (e.g. `13CTrcYiya9NNnRyd3jXA21CULPPDSqM90sdFnGs`) |
 | `applicationId` | Your site domain — application identifier in Bespot. Sample: `your-app-id` (e.g. `mywebapp.mycompany.com`) |
 | `applicationVersion` | Your application's release label in Bespot. Sample: `your-app-version` (e.g. `2.4.1`) |
@@ -201,7 +201,7 @@ Follow this sequence **every time** you integrate:
 | 2 | `await sdk.initialize(jwt)` | Yes | **Throws** (e.g. `InvalidAccessToken`, `NetworkError`, `AuthenticationFailed`) |
 | 3 | `sdk.setUserId(id)` | No | — |
 | 4 | `await sdk.check()` | When you need a result | **Returns** success object or `Error` (does not throw) |
-| 5 | `await sdk.subscribe()` | No | Interval from [server configuration](#periodic-checks) |
+| 5 | `await sdk.subscribe()` | No | **Throws** `NotInitialized` if `initialize` has not succeeded |
 | 6 | `sdk.unsubscribe()` | When stopping periodic checks | — |
 
 ```text
@@ -281,7 +281,7 @@ Replace placeholder URLs and credentials with your real values. Copy-ready files
           // sdk.unsubscribe()
         } catch (error) {
           const err = error instanceof Error ? error : new Error(String(error))
-          console.error('[INITIALIZE FAILED]', err.name, '-', err.message)
+          console.error('[INITIALIZE OR SUBSCRIBE FAILED]', err.name, '-', err.message)
         }
       }
 
@@ -342,7 +342,7 @@ Replace placeholder URLs and credentials with your real values. Copy-ready files
         await sdk.subscribe()
       } catch (error) {
         const err = error instanceof Error ? error : new Error(String(error))
-        console.error('[INITIALIZE FAILED]', err.name, '-', err.message)
+        console.error('[INITIALIZE OR SUBSCRIBE FAILED]', err.name, '-', err.message)
       }
     })()
   </script>
@@ -375,7 +375,7 @@ All four fields are required (non-empty strings) whether passed here or via `glo
 | `setAccessToken(accessToken: string): void` | **Yes** | Updates JWT **without** re-registering. Use after JWT refresh. Does **not** replace `initialize`. |
 | `setUserId(userId: string): void` | No | Sets your customer/client related unique user identifier |
 | `check()` | No | Runs one Gatekeeper check. Returns a [check result](integration-guide.md#check-result-shape) object or an `Error` subclass (does not throw). |
-| `subscribe(): Promise<void>` | No | Starts periodic checks on the [registration interval](#periodic-checks). Pauses while browser tab is hidden. |
+| `subscribe(): Promise<void>` | **Yes** (`NotInitialized`) | Starts periodic checks on the [registration interval](#periodic-checks). Pauses while browser tab is hidden. |
 | `unsubscribe(): void` | No | Stops periodic checks and clears timers. |
 
 ### Properties
@@ -408,9 +408,9 @@ if (!(result instanceof Error)) {
 
 `subscribe()` runs `check()` on a fixed interval. The interval is **not** passed as a JavaScript argument.
 
-The interval is set by Bespot in `configuration.periodic_interval` from device registration (string or number, in **milliseconds**).
+The interval is set by Bespot in `configuration.periodic_interval` from device registration (string or number, in **milliseconds**). When the backend omits it, the SDK defaults to **15 minutes** (`900000` ms).
 
-Call `subscribe()` with **no arguments** after a successful `initialize()`. Read `sdk.lastCheckResult` after each periodic run.
+Call `subscribe()` with **no arguments** after a successful `initialize()`. The first periodic check runs after one full interval — not immediately. Read `sdk.lastCheckResult` after each periodic run.
 
 ---
 
@@ -418,9 +418,9 @@ Call `subscribe()` with **no arguments** after a successful `initialize()`. Read
 
 There are **two different** error behaviors. Mixing them up is the most common integration bug.
 
-### Rule 1: `initialize` and `setAccessToken` **throw**
+### Rule 1: `initialize`, `setAccessToken`, and `subscribe` **throw**
 
-Always wrap in `try/catch`:
+`initialize` and `setAccessToken` throw on invalid input or network failures. `subscribe` throws `NotInitialized` if called before a successful `initialize`. Always wrap in `try/catch`:
 
 ```js
 try {
@@ -454,7 +454,7 @@ When logging errors, use **`error.name`** and **`error.message`**.
 | `InvalidSDKConfiguration` | Missing or empty `baseUrl`, `apiKey`, `applicationId`, or `applicationVersion` | Set all four config fields before `new SafeSDK()` |
 | `InvalidAccessToken` | JWT is empty or only whitespace | Pass a non-empty token to `initialize` |
 | `InvalidAccessTokenFormat` | JWT is not `xxx.yyy.zzz` (three non-empty parts) | Fix token format from your auth server |
-| `NotInitialized` | `check()` called before successful `initialize`, or only `setAccessToken` was called | Call `await initialize(jwt)` first |
+| `NotInitialized` | `check()` or `subscribe()` before successful `initialize`, or only `setAccessToken` was called | Call `await initialize(jwt)` first |
 | `InvalidApiKey` | Gatekeeper rejected the API key | Verify `apiKey` with Bespot |
 | `AuthenticationFailed` | HTTP 401 from Gatekeeper | JWT expired or invalid — refresh token ([§11](#11-access-token-rotation)) |
 | `AuthorizationFailed` | HTTP 403 from Gatekeeper | JWT or app lacks permission |
@@ -475,7 +475,9 @@ The SDK uses the browser **Geolocation API** to obtain the user's location durin
 
 **Your responsibility:** Explain to your users why location access is needed — before or when your app runs Gatekeeper checks. Clear messaging helps users make an informed choice.
 
-**If the user denies permission:** Checks that depend on user location will not work. Plan your UX, permission flow, and fallback behavior accordingly.
+**If the user denies permission:** The SDK still runs the check without a location fix. Location-dependent policy may not apply — plan your UX, permission flow, and fallback behavior accordingly.
+
+**If the browser has no Geolocation API:** `check()` returns `GeolocationNotSupported`.
 
 **Requirements:** Production sites must be served over **HTTPS** (browsers block geolocation on non-secure origins).
 
@@ -526,7 +528,6 @@ if (result instanceof Error && result.name === 'AuthenticationFailed') {
 | Using `try/catch` around `check()` only | Missed failures | Use `if (result instanceof Error)` |
 | Passing arguments to `subscribe()` | Not supported | Call `subscribe()` with no arguments; interval comes from [server registration](#periodic-checks) |
 | Using SDK tarball version as `applicationVersion` | `NoRecipeFound` or auth errors | Use the app version registered with Bespot |
-| Trailing slash on `baseUrl` | May cause bad URLs | Use `https://gatekeeper.bespotcompany.com` not `https://gatekeeper.bespotcompany.com/` |
 | Putting `client_secret` in frontend | Security risk | Token exchange on your server only |
 | Calling `initialize()` on every JWT refresh | Unnecessary re-registration | Use `setAccessToken()` after the first `initialize()` |
 | Loading UMD script before `__SAFE_SDK_CONFIG__` | `InvalidSDKConfiguration` | Config script must run **first** |
@@ -575,6 +576,7 @@ If the failing request URL matches your `baseUrl` (e.g. `https://gatekeeper.besp
 1. User is offline or behind a blocking proxy.
 2. `baseUrl` is wrong or unreachable from the user's network.
 3. Mixed content: HTTPS page calling HTTP API (blocked by browser).
+4. Request timed out after 30 seconds (SDK uses `AbortController` on all Gatekeeper requests).
 
 ### No periodic check results appear
 

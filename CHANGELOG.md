@@ -10,11 +10,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- SHA256 checksums (`SHA256SUMS`) published with each release for verifying bundle integrity
+
 ### Changed
 
-### Fixed
-
-### Removed
+- **Breaking:** Access tokens should be requested via `POST /oauth2/token` on your Gatekeeper API host (Kerberos proxy), not the Cognito issuer URL directly
+- **Breaking:** Token request failures now return `error_code` and `description` instead of an OAuth `error` field — update server-side error handling if you parse token errors
 
 ---
 

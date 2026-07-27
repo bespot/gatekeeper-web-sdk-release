@@ -8,9 +8,9 @@ Gatekeeper Web SDK failure types and handling rules.
 
 There are **two** error behaviors. Mixing them up is the most common integration bug.
 
-### Rule 1: `initialize` and `setAccessToken` throw
+### Rule 1: `initialize`, `setAccessToken`, and `subscribe` throw
 
-Always wrap in `try/catch`:
+`initialize` and `setAccessToken` throw on invalid input or network failures. `subscribe` throws `NotInitialized` if called before a successful `initialize`. Always wrap in `try/catch`:
 
 ```js
 try {
@@ -44,7 +44,7 @@ When logging errors, use **`error.name`** and **`error.message`**.
 | `InvalidSDKConfiguration` | Missing or empty `baseUrl`, `apiKey`, `applicationId`, or `applicationVersion` | Set all four config fields before `new SafeSDK()` |
 | `InvalidAccessToken` | JWT is empty or only whitespace | Pass a non-empty token to `initialize` |
 | `InvalidAccessTokenFormat` | JWT is not `xxx.yyy.zzz` (three non-empty parts) | Fix token format from your auth server |
-| `NotInitialized` | `check()` before successful `initialize`, or only `setAccessToken` was called | Call `await initialize(jwt)` first |
+| `NotInitialized` | `check()` or `subscribe()` before successful `initialize`, or only `setAccessToken` was called | Call `await initialize(jwt)` first |
 | `InvalidApiKey` | Gatekeeper rejected the API key | Verify `apiKey` with Bespot |
 | `AuthenticationFailed` | HTTP 401 from Gatekeeper | JWT expired or invalid — [access token rotation](integration-guide.md#11-access-token-rotation) |
 | `AuthorizationFailed` | HTTP 403 from Gatekeeper | JWT or app lacks permission |
