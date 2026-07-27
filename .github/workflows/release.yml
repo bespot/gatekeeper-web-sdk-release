@@ -4,6 +4,12 @@ on:
   pull_request:
     types: [closed]
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version to run or resume. Completed steps are skipped.'
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -15,12 +21,16 @@ jobs:
   create-release:
     name: Create GitHub Release
     if: >-
-      github.event.pull_request.merged == true &&
-      startsWith(github.event.pull_request.head.ref, 'release/')
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.merged == true &&
+       startsWith(github.event.pull_request.head.ref, 'release/'))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     concurrency:
-      group: release-${{ github.event.pull_request.head.ref }}
+      group: >-
+        ${{ github.event_name == 'workflow_dispatch'
+            && format('release-v{0}', github.event.inputs.version)
+            || format('release-{0}', github.event.pull_request.head.ref) }}
       cancel-in-progress: true
     permissions:
       contents: write
@@ -31,20 +41,56 @@ jobs:
       html_url: ${{ steps.github_release.outputs.html_url }}
 
     steps:
-      - name: Checkout merge commit
+      - name: Resolve release target
+        id: target
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            version="${{ github.event.inputs.version }}"
+            version="${version#v}"
+            if ! [[ "${version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "::error::Version must be semver X.Y.Z (e.g. 1.0.2)."
+              exit 1
+            fi
+            branch="release/v${version}"
+            tag="v${version}"
+            if gh release view "${tag}" >/dev/null 2>&1; then
+              checkout_ref="${tag}"
+              echo "Using tag ${tag}."
+            else
+              encoded_branch="$(printf '%s' "${branch}" | jq -sRr @uri)"
+              if gh api "repos/${GITHUB_REPOSITORY}/branches/${encoded_branch}" >/dev/null 2>&1; then
+                checkout_ref="${branch}"
+                echo "::notice::Tag ${tag} not found; checking out branch ${branch}."
+              else
+                echo "::error::Neither tag ${tag} nor branch ${branch} exists in ${GITHUB_REPOSITORY}."
+                exit 1
+              fi
+            fi
+            echo "branch=${branch}" >> "$GITHUB_OUTPUT"
+            echo "checkout_ref=${checkout_ref}" >> "$GITHUB_OUTPUT"
+          else
+            echo "branch=${{ github.event.pull_request.head.ref }}" >> "$GITHUB_OUTPUT"
+            echo "checkout_ref=${{ github.event.pull_request.merge_commit_sha }}" >> "$GITHUB_OUTPUT"
+          fi
+        shell: bash
+
+      - name: Checkout release commit
         uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          ref: ${{ steps.target.outputs.checkout_ref }}
 
       - name: Validate release
         id: validate
         uses: ./.github/actions/validate-release
         with:
-          branch: ${{ github.event.pull_request.head.ref }}
+          branch: ${{ steps.target.outputs.branch }}
           extract_release_notes: 'true'
           release_notes_path: /tmp/release-notes.md
           check_source_release: 'true'
-          check_not_published: ${{ github.run_attempt == 1 && 'true' || 'false' }}
+          check_not_published: ${{ github.event_name != 'workflow_dispatch' && github.run_attempt == 1 && 'true' || 'false' }}
           source_repo: ${{ secrets.SOURCE_REPO }}
           source_repo_pat: ${{ secrets.SOURCE_REPO_PAT }}
           npm_package: ${{ secrets.NPM_PACKAGE }}
@@ -126,8 +172,8 @@ jobs:
           set -euo pipefail
           sha256sum dist/safe-sdk.esm.min.js dist/safe-sdk.umd.min.js > SHA256SUMS
           if existing_url="$(gh release view "${TAG}" --json url -q '.url' 2>/dev/null)"; then
-            echo "html_url=${existing_url}" >> "$GITHUB_OUTPUT"
-            echo "::notice::GitHub release ${TAG} already exists; updating assets only."
+            echo "html_url=$(printf '%s' "${existing_url}" | base64 -w0)" >> "$GITHUB_OUTPUT"
+            echo "::notice::GitHub release ${TAG} already exists; refreshing release notes and assets."
             gh release edit "${TAG}" \
               --title "${TAG}" \
               --notes-file /tmp/release-notes.md
@@ -144,7 +190,7 @@ jobs:
               dist/safe-sdk.umd.min.js \
               SHA256SUMS
             html_url="$(gh release view "${TAG}" --json url -q '.url')"
-            echo "html_url=${html_url}" >> "$GITHUB_OUTPUT"
+            echo "html_url=$(printf '%s' "${html_url}" | base64 -w0)" >> "$GITHUB_OUTPUT"
           fi
         shell: bash
 
@@ -272,10 +318,13 @@ jobs:
           )"
           tickets="$(echo "${parsed}" | jq -r '.tickets')"
           slack_section="$(echo "${parsed}" | jq -r '.slack_section')"
-          echo "tickets=${tickets}" >> "$GITHUB_OUTPUT"
+          # Base64-encode outputs so GitHub Actions does not drop them when they
+          # contain secret substrings (e.g. FRD-1542 contains JIRA_PROJECT, URLs
+          # contain JIRA_SITE_URL).
+          echo "tickets=$(printf '%s' "${tickets}" | base64 -w0)" >> "$GITHUB_OUTPUT"
           {
             echo 'slack_section<<EOF'
-            printf '%s\n' "${slack_section}"
+            printf '%s' "$(printf '%s' "${slack_section}" | base64 -w0)"
             echo 'EOF'
           } >> "$GITHUB_OUTPUT"
         shell: bash
@@ -300,7 +349,7 @@ jobs:
         id: jira
         env:
           VERSION: ${{ needs.create-release.outputs.version }}
-          TICKETS_CSV: ${{ needs.changelog-parsing.outputs.tickets }}
+          TICKETS_CSV_B64: ${{ needs.changelog-parsing.outputs.tickets }}
           JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
           JIRA_SITE_URL: ${{ secrets.JIRA_SITE_URL }}
           JIRA_OAUTH_CLIENT_ID: ${{ secrets.JIRA_OAUTH_CLIENT_ID }}
@@ -315,6 +364,10 @@ jobs:
           set -euo pipefail
           VERSION_NAME="${VERSION}-web"
           echo "version_name=${VERSION_NAME}" >> "$GITHUB_OUTPUT"
+          TICKETS_CSV=""
+          if [ -n "${TICKETS_CSV_B64:-}" ]; then
+            TICKETS_CSV="$(printf '%s' "${TICKETS_CSV_B64}" | base64 -d)"
+          fi
 
           if [ -z "${JIRA_PROJECT:-}" ]; then
             echo "::error::Missing secret: JIRA_PROJECT"
@@ -379,7 +432,7 @@ jobs:
               exit 1
             fi
             VERSION_URL="${JIRA_SITE_URL}/projects/${JIRA_PROJECT}/versions/${version_id}"
-            echo "version_url=${VERSION_URL}" >> "$GITHUB_OUTPUT"
+            echo "version_url=$(printf '%s' "${VERSION_URL}" | base64 -w0)" >> "$GITHUB_OUTPUT"
           }
 
           if [ "${RUN_ATTEMPT}" -gt 1 ]; then
@@ -506,9 +559,9 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           VERSION: ${{ needs.create-release.outputs.version }}
-          HTML_URL: ${{ needs.create-release.outputs.html_url }}
-          SLACK_SECTION: ${{ needs.changelog-parsing.outputs.slack_section }}
-          JIRA_VERSION_URL: ${{ needs.jira-release.outputs.version_url }}
+          HTML_URL_B64: ${{ needs.create-release.outputs.html_url }}
+          SLACK_SECTION_B64: ${{ needs.changelog-parsing.outputs.slack_section }}
+          JIRA_VERSION_URL_B64: ${{ needs.jira-release.outputs.version_url }}
           JIRA_VERSION_NAME: ${{ needs.jira-release.outputs.version_name }}
         run: |
           set -euo pipefail
@@ -516,7 +569,9 @@ jobs:
             echo "::error::Slack release requires secret: SLACK_WEBHOOK_URL."
             exit 1
           fi
-          section_text="${SLACK_SECTION}"
+          HTML_URL="$(printf '%s' "${HTML_URL_B64:-}" | base64 -d)"
+          section_text="$(printf '%s' "${SLACK_SECTION_B64:-}" | base64 -d)"
+          JIRA_VERSION_URL="$(printf '%s' "${JIRA_VERSION_URL_B64:-}" | base64 -d)"
 
           # Slack section text is capped at 3000 characters.
           if [ "${#section_text}" -gt 2900 ]; then
@@ -582,8 +637,16 @@ jobs:
             failures=1
           fi
           if [ "${failures}" -ne 0 ]; then
-            echo "::error::Release publish succeeded but notification pipeline did not complete."
+            if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+              echo "::error::Release retry did not complete."
+            else
+              echo "::error::Release publish succeeded but notification pipeline did not complete."
+            fi
             exit 1
           fi
-          echo "Release pipeline completed successfully."
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "Release retry completed successfully."
+          else
+            echo "Release pipeline completed successfully."
+          fi
         shell: bash
