@@ -6,8 +6,8 @@ JWT access tokens and OAuth for the Gatekeeper Web SDK.
 
 ## Official reference
 
-- [Bespot Docs](https://docs.bespot.com) — Bespot product documentation
-- [Bespot Authentication Guide](https://docs.bespot.com/api/auth) — Bespot authentication API
+- [Bespot Docs](https://docs.bespot.com?utm_source=authentication&utm_medium=docs-home&utm_campaign=gatekeeper-web-sdk&utm_content=authentication-docs-home) — Bespot product documentation
+- [Bespot Authentication Guide](https://docs.bespot.com/api/auth?utm_source=authentication&utm_medium=docs-auth&utm_campaign=gatekeeper-web-sdk&utm_content=authentication-docs-auth) — Bespot authentication API
 
 ---
 

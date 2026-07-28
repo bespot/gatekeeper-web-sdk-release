@@ -51,13 +51,13 @@ The SDK is a **single class** named `SafeSDK`. It is a **singleton**: every `new
 
 ## 2. Bespot prerequisites
 
-Before writing code, sign up at **[gatekeeper.bespot.com](https://gatekeeper.bespot.com)** to create your account and obtain credentials.
+Before writing code, sign up at **[gatekeeper.bespot.com](https://gatekeeper.bespot.com?utm_source=integration&utm_medium=signup&utm_campaign=gatekeeper-web-sdk&utm_content=integration-signup)** to create your account and obtain credentials.
 
 | What | URL / value | Purpose |
 |------|-------------|---------|
-| Account portal | [gatekeeper.bespot.com](https://gatekeeper.bespot.com) | Sign in and manage your Bespot account |
+| Account portal | `https://gatekeeper.bespot.com` | Sign in and manage your Bespot account |
 | Gatekeeper API (`baseUrl`) | `bespot-gatekeeper-base-url` (e.g. `https://gatekeeper.bespotcompany.com`) | API host Bespot assigns when you register — set this in SDK runtime config |
-| Product documentation | [docs.bespot.com](https://docs.bespot.com) | Official Bespot guides and API reference |
+| Product documentation | [docs.bespot.com](https://docs.bespot.com?utm_source=integration&utm_medium=docs-home&utm_campaign=gatekeeper-web-sdk&utm_content=integration-docs-home) | Official Bespot guides and API reference |
 
 Do **not** use the account portal URL as `baseUrl`. The SDK must call your assigned Gatekeeper API host, not the sign-in site.
 
@@ -640,6 +640,6 @@ When contacting Bespot support, include:
 - Browser name, version, and operating system
 - Approximate time (UTC) of the failure
 
-Authentication reference: [Bespot Authentication Guide](https://docs.bespot.com/api/auth).
+Authentication reference: [Bespot Authentication Guide](https://docs.bespot.com/api/auth?utm_source=integration&utm_medium=docs-auth&utm_campaign=gatekeeper-web-sdk&utm_content=integration-docs-auth).
 
 ---
