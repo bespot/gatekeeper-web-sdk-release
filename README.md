@@ -18,11 +18,11 @@ or reward fraud.
 
 ## Prerequisites
 
-Before integrating, sign up at **[gatekeeper.bespot.com](https://gatekeeper.bespot.com)** to create your account and obtain your API key and other credentials for SDK runtime configuration.
+Before integrating, sign up at **[gatekeeper.bespot.com](https://gatekeeper.bespot.com?utm_source=readme&utm_medium=signup&utm_campaign=gatekeeper-web-sdk&utm_content=readme-signup)** to create your account and obtain your API key and other credentials for SDK runtime configuration.
 
 ## Documentation
 
-SDK integration guides live in this repository. Official Bespot product documentation is at **[docs.bespot.com](https://docs.bespot.com)**.
+SDK integration guides live in this repository. Official Bespot product documentation is at **[docs.bespot.com](https://docs.bespot.com?utm_source=readme&utm_medium=docs-home&utm_campaign=gatekeeper-web-sdk&utm_content=readme-docs-home)**.
 
 | Document | Description |
 |----------|-------------|
@@ -32,7 +32,7 @@ SDK integration guides live in this repository. Official Bespot product document
 | [SDK versioning](docs/versioning.md) | SDK package version vs application version |
 | [Templates](templates/) | Copy-paste HTML and config starters |
 
-Official authentication API reference: [Bespot Authentication Guide](https://docs.bespot.com/api/auth).
+Official authentication API reference: [Bespot Authentication Guide](https://docs.bespot.com/api/auth?utm_source=readme&utm_medium=docs-auth&utm_campaign=gatekeeper-web-sdk&utm_content=readme-docs-auth).
 
 ## Installation
 
@@ -56,7 +56,7 @@ No Node.js required. Download `safe-sdk.esm.min.js` or `safe-sdk.umd.min.js` fro
 
 ## Quick start
 
-1. **Account** — sign in at [gatekeeper.bespot.com](https://gatekeeper.bespot.com) and collect your credentials
+1. **Account** — sign in at gatekeeper.bespot.com and collect your credentials
 2. **Install** — `npm install @bespot/gatekeeper-web-sdk` or download from [Releases](https://github.com/bespot/gatekeeper-web-sdk-release/releases)
 3. **Configure** — four runtime fields: `baseUrl`, `apiKey`, `applicationId`, `applicationVersion` ([runtime configuration](docs/integration-guide.md#5-runtime-configuration))
 4. **Authenticate** — obtain a JWT from your backend ([authentication](docs/authentication.md))
