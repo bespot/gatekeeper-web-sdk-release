@@ -537,6 +537,8 @@ if (result instanceof Error && result.name === 'AuthenticationFailed') {
 
 ## 13. Troubleshooting
 
+Before deep debugging, you can exercise Initialize / Check against this repo’s `dist/` bundles with the [credentials smoke test](../examples/smoke-test/) ([UMD](../examples/smoke-test/umd.html) / [ESM](../examples/smoke-test/esm.html)). That page is a sandbox harness (browser Get JWT exposes `client_secret`) — not a production pattern.
+
 ### `initialize` throws immediately
 
 1. JWT is a non-empty string with exactly two dots (three segments).
