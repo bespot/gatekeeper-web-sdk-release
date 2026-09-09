@@ -3,7 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Gatekeeper Web SDK — Sandbox (ESM)</title>
+    <title>Gatekeeper Web SDK — Sandbox</title>
+    <link rel="icon" href="/public/favicon.png" type="image/png" />
+    <link rel="shortcut icon" href="/favicon.ico" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -37,7 +39,8 @@
 
       body {
         margin: 0;
-        min-height: 100vh;
+        height: 100dvh;
+        overflow: hidden;
         background:
           radial-gradient(
             1200px 480px at 12% -10%,
@@ -53,9 +56,14 @@
       }
 
       .page {
-        width: min(40rem, calc(100% - 2rem));
+        width: min(72rem, calc(100% - 2.5rem));
+        height: 100dvh;
         margin: 0 auto;
-        padding: 1.75rem 0 2.5rem;
+        padding: 1rem 0 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.65rem;
+        min-height: 0;
       }
 
       .top {
@@ -63,7 +71,7 @@
         align-items: center;
         justify-content: space-between;
         gap: 1rem;
-        margin-bottom: 1.35rem;
+        flex-shrink: 0;
       }
 
       .brand {
@@ -81,102 +89,202 @@
         color: var(--bespot-magenta);
       }
 
-      .brand-chip {
+      /* Shared size for every top-line bubble (Gatekeeper / Sandbox / UMD·ESM / version) */
+      .brand-chip,
+      .sandbox-chip,
+      .format-toggle,
+      .sdk-version {
+        display: inline-flex;
+        align-items: center;
+        box-sizing: border-box;
+        height: 1.5rem;
+        border-radius: 999px;
+        font-family: 'Sofia Sans', Manrope, sans-serif;
         font-size: 0.7rem;
-        font-weight: 600;
+        font-weight: 700;
         letter-spacing: 0.04em;
         text-transform: uppercase;
-        color: var(--bespot-magenta);
-        background: rgba(228, 28, 81, 0.1);
-        border-radius: 999px;
-        padding: 0.2rem 0.55rem;
+        line-height: 1;
+        white-space: nowrap;
       }
 
-      .brand-chip.muted {
+      .brand-chip,
+      .sandbox-chip,
+      .sdk-version {
+        padding: 0 0.55rem;
+      }
+
+      .brand-chip {
+        color: var(--bespot-magenta);
+        background: rgba(228, 28, 81, 0.1);
+      }
+
+      .sandbox-chip {
         color: var(--bespot-navy-muted);
-        background: rgba(35, 31, 64, 0.08);
+        background: rgba(35, 31, 64, 0.1);
+      }
+
+      .format-toggle {
+        padding: 0.15rem;
+        gap: 0.1rem;
+        background: rgba(35, 31, 64, 0.1);
+        border: none;
+      }
+
+      .format-toggle button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+        height: 100%;
+        margin: 0;
+        padding: 0 0.5rem;
+        border: none;
+        border-radius: 999px;
+        background: transparent;
+        color: var(--bespot-navy-muted);
+        font-family: inherit;
+        font-size: inherit;
+        font-weight: inherit;
+        letter-spacing: inherit;
+        text-transform: inherit;
+        line-height: 1;
+        cursor: pointer;
+        transform: none;
+        transition:
+          background 0.15s ease,
+          color 0.15s ease;
+      }
+
+      .format-toggle button:hover:not([aria-pressed='true']) {
+        color: var(--bespot-navy);
+        background: rgba(35, 31, 64, 0.06);
+      }
+
+      .format-toggle button[aria-pressed='true'] {
+        background: var(--bespot-magenta);
+        color: #fff;
+      }
+
+      .format-toggle button:focus-visible {
+        outline: 2px solid rgba(24, 99, 220, 0.55);
+        outline-offset: 2px;
+      }
+
+      .format-toggle button:active {
+        transform: none;
       }
 
       .sdk-version {
         flex-shrink: 0;
-        font-family: 'Sofia Sans', Manrope, sans-serif;
-        font-size: 0.8rem;
-        font-weight: 700;
         color: var(--bespot-navy);
         background: rgba(35, 31, 64, 0.06);
-        border-radius: 999px;
-        padding: 0.35rem 0.7rem;
-        white-space: nowrap;
+        text-transform: none;
+        letter-spacing: 0.01em;
       }
 
       .panel {
         background: var(--bespot-surface);
         border: 1px solid var(--bespot-border);
         border-radius: var(--radius);
-        padding: 1.1rem 1.15rem 1.2rem;
-        margin: 0 0 0.85rem;
+        padding: 0.85rem 1rem 1rem;
+        margin: 0;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        gap: 0.7rem;
+      }
+
+      .panels {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        flex: 1.35 1 0;
+        min-height: 0;
+        align-items: stretch;
       }
 
       .panel h2 {
         font-family: 'Sofia Sans', Manrope, sans-serif;
-        font-size: 0.95rem;
+        font-size: 0.9rem;
         font-weight: 600;
-        margin: 0 0 0.75rem;
+        margin: 0;
+        flex-shrink: 0;
+      }
+
+      .fields {
+        display: flex;
+        flex-direction: column;
+        gap: 0.7rem;
+        flex: 1 1 auto;
+        min-height: 0;
+      }
+
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.22rem;
+        min-width: 0;
+        flex-shrink: 0;
+      }
+
+      .fields > .run {
+        flex-shrink: 0;
+        margin-top: auto;
+      }
+
+      .run {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.55rem;
+        width: 100%;
       }
 
       label {
         display: block;
-        font-size: 0.78rem;
+        font-size: 0.72rem;
         font-weight: 600;
         letter-spacing: 0.01em;
-        margin: 0.65rem 0 0.25rem;
+        margin: 0;
         color: var(--bespot-navy-muted);
       }
 
-      .panel > label:first-of-type {
-        margin-top: 0;
-      }
-
-      input,
-      textarea {
+      input {
         width: 100%;
         font: inherit;
+        font-size: 0.86rem;
         color: var(--bespot-navy);
         background: #fbfbfd;
         border: 1px solid var(--bespot-border);
         border-radius: 8px;
-        padding: 0.55rem 0.7rem;
+        padding: 0.4rem 0.6rem;
         transition:
           border-color 0.15s ease,
           box-shadow 0.15s ease;
       }
 
-      input:focus,
-      textarea:focus {
+      input:focus {
         outline: none;
         border-color: rgba(24, 99, 220, 0.55);
         box-shadow: 0 0 0 3px rgba(24, 99, 220, 0.15);
         background: #fff;
       }
 
-      input:read-only,
-      textarea:read-only {
+      input:read-only {
         color: var(--bespot-navy-muted);
         background: #f3f4f7;
         cursor: default;
       }
 
-      input:read-only:focus,
-      textarea:read-only:focus {
+      input:read-only:focus {
         border-color: var(--bespot-border);
         box-shadow: none;
       }
 
-      textarea {
-        min-height: 4.75rem;
-        resize: vertical;
+      input#jwt {
         font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-        font-size: 0.82rem;
+        font-size: 0.78rem;
       }
 
       .secret-field {
@@ -191,13 +299,13 @@
       .secret-field .toggle-secret {
         position: absolute;
         top: 50%;
-        right: 0.35rem;
+        right: 0.25rem;
         transform: translateY(-50%);
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 2.1rem;
-        height: 2.1rem;
+        width: 1.75rem;
+        height: 1.75rem;
         margin: 0;
         padding: 0;
         border: none;
@@ -227,39 +335,30 @@
         display: block;
       }
 
-      .grid-2 {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0 0.75rem;
-      }
+      @media (max-width: 720px) {
+        body {
+          height: auto;
+          min-height: 100dvh;
+          overflow: auto;
+        }
 
-      .row {
-        display: grid;
-        grid-template-columns: 1fr auto;
-        gap: 0.55rem;
-        align-items: end;
-      }
+        .page {
+          height: auto;
+          min-height: 100dvh;
+        }
 
-      .row label {
-        grid-column: 1 / -1;
-      }
-
-      @media (max-width: 560px) {
-        .grid-2,
-        .row {
+        .panels {
           grid-template-columns: 1fr;
         }
 
-        .row button {
-          width: 100%;
+        .top {
+          flex-direction: column;
+          align-items: flex-start;
         }
-      }
 
-      .run {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0.65rem;
-        margin: 0.15rem 0 0.85rem;
+        .log-panel {
+          min-height: 10rem;
+        }
       }
 
       @media (max-width: 420px) {
@@ -270,10 +369,10 @@
 
       button {
         font-family: 'Sofia Sans', Manrope, sans-serif;
-        font-size: 0.95rem;
+        font-size: 0.9rem;
         font-weight: 500;
         border-radius: var(--radius-pill);
-        padding: 0.6rem 1.15rem;
+        padding: 0.5rem 1rem;
         cursor: pointer;
         border: 1.5px solid transparent;
         transition:
@@ -320,51 +419,31 @@
         background: var(--bespot-navy-soft);
       }
 
+      .log-panel {
+        flex: 1 1 0;
+        min-height: 7rem;
+        display: flex;
+        flex-direction: column;
+        padding: 0.55rem;
+      }
+
       #log {
-        min-height: 9rem;
-        max-height: 20rem;
+        flex: 1 1 auto;
+        min-height: 0;
         overflow: auto;
-        padding: 0.75rem 0.85rem;
+        padding: 0.65rem 0.75rem;
         background: #1a1730;
         color: #e8e6f2;
         border-radius: 8px;
         font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-        font-size: 0.78rem;
-        line-height: 1.55;
+        font-size: 0.76rem;
+        line-height: 1.5;
         white-space: pre-wrap;
       }
 
       #log:empty::before {
         content: 'Action results will appear here…';
         color: rgba(232, 230, 242, 0.45);
-      }
-
-
-      .sandbox {
-        margin: 0 0 1.1rem;
-        padding: 0.75rem 0.9rem;
-        border-radius: var(--radius);
-        border: 1px solid rgba(228, 28, 81, 0.28);
-        background: rgba(228, 28, 81, 0.06);
-        font-size: 0.82rem;
-        color: var(--bespot-navy);
-      }
-
-      .sandbox a {
-        color: var(--bespot-magenta);
-        font-weight: 600;
-      }
-
-      .twin-link {
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: var(--bespot-blue);
-        text-decoration: none;
-        margin-left: 0.35rem;
-      }
-
-      .twin-link:hover {
-        text-decoration: underline;
       }
 
       .ok {
@@ -382,159 +461,197 @@
         <div class="brand">
           <div class="brand-mark">bespot</div>
           <span class="brand-chip">Gatekeeper</span>
-          <span class="brand-chip muted">Sandbox · ESM</span>
-          <a class="twin-link" href="./umd.html">UMD version</a>
+          <span class="sandbox-chip">Sandbox</span>
+          <div
+            class="format-toggle"
+            role="group"
+            aria-label="SDK bundle format"
+          >
+            <button type="button" id="btnFormatUmd" aria-pressed="true">
+              UMD
+            </button>
+            <button type="button" id="btnFormatEsm" aria-pressed="false">
+              ESM
+            </button>
+          </div>
         </div>
         <div class="sdk-version" id="sdkVersion">…</div>
       </header>
 
-      <p class="sandbox">
-        <strong>Sandbox only.</strong>
-        Get JWT puts your OAuth client secret in the browser — never ship this in production.
-        Production apps must mint JWTs on your server.
-        See
-        <a href="../../docs/authentication.md">Authentication</a>.
-      </p>
-
-      <section class="panel">
-        <h2>Config</h2>
-        <label for="baseUrl">Backend URL</label>
-        <input
-          id="baseUrl"
-          value="https://gatekeeper.bespot.dev/v2"
-          autocomplete="off"
-          readonly
-        />
-        <label for="apiKey">API key</label>
-        <div class="secret-field">
-          <input
-            id="apiKey"
-            type="password"
-            value=""
-            placeholder="Enter API key"
-            autocomplete="new-password"
-          />
-          <button
-            type="button"
-            class="toggle-secret"
-            data-target="apiKey"
-            aria-label="Show API key"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                fill="currentColor"
-                d="M12 5c-5 0-9.27 3.11-11 7 1.73 3.89 6 7 11 7s9.27-3.11 11-7c-1.73-3.89-6-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-2.5A2.5 2.5 0 1 0 12 9a2.5 2.5 0 0 0 0 5z"
-              />
-            </svg>
-          </button>
-        </div>
-        <div class="grid-2">
-          <div>
-            <label for="applicationId">Application ID</label>
-            <input
-              id="applicationId"
-              value=""
-              placeholder="Enter application ID"
-              autocomplete="off"
-            />
-          </div>
-          <div>
-            <label for="applicationVersion">Application version</label>
-            <input
-              id="applicationVersion"
-              value=""
-              placeholder="Enter application version"
-              autocomplete="off"
-            />
-          </div>
-        </div>
-      </section>
-
-      <section class="panel">
-        <h2>Auth</h2>
-        <label for="authServerUrl">Cognito token URL</label>
-        <input
-          id="authServerUrl"
-          value="https://gatekeeper.auth.eu-west-1.amazoncognito.com"
-          autocomplete="off"
-          readonly
-        />
-        <div class="grid-2">
-          <div>
-            <label for="clientId">Client ID</label>
-            <input
-              id="clientId"
-              value=""
-              placeholder="Enter client ID"
-              autocomplete="off"
-            />
-          </div>
-          <div>
-            <label for="clientSecret">Client secret</label>
-            <div class="secret-field">
+      <div class="panels">
+        <section class="panel">
+          <h2>Auth</h2>
+          <div class="fields">
+            <div class="field">
+              <label for="authServerUrl">Cognito token URL</label>
               <input
-                id="clientSecret"
-                type="password"
-                value=""
-                placeholder="Enter client secret"
-                autocomplete="new-password"
+                id="authServerUrl"
+                value="https://gatekeeper.auth.eu-west-1.amazoncognito.com"
+                autocomplete="off"
+                readonly
               />
-              <button
-                type="button"
-                class="toggle-secret"
-                data-target="clientSecret"
-                aria-label="Show client secret"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path
-                    fill="currentColor"
-                    d="M12 5c-5 0-9.27 3.11-11 7 1.73 3.89 6 7 11 7s9.27-3.11 11-7c-1.73-3.89-6-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-2.5A2.5 2.5 0 1 0 12 9a2.5 2.5 0 0 0 0 5z"
-                  />
-                </svg>
+            </div>
+            <div class="field">
+              <label for="scope">OAuth scope</label>
+              <input
+                id="scope"
+                value="main_antifraud_resource_server/public"
+                autocomplete="off"
+                readonly
+              />
+            </div>
+            <div class="field">
+              <label for="clientId">Client ID</label>
+              <input
+                id="clientId"
+                value=""
+                placeholder="Enter client ID"
+                autocomplete="off"
+              />
+            </div>
+            <div class="field">
+              <label for="clientSecret">Client secret</label>
+              <div class="secret-field">
+                <input
+                  id="clientSecret"
+                  type="password"
+                  value=""
+                  placeholder="Enter client secret"
+                  autocomplete="new-password"
+                />
+                <button
+                  type="button"
+                  class="toggle-secret"
+                  data-target="clientSecret"
+                  aria-label="Show client secret"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      fill="currentColor"
+                      d="M12 5c-5 0-9.27 3.11-11 7 1.73 3.89 6 7 11 7s9.27-3.11 11-7c-1.73-3.89-6-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-2.5A2.5 2.5 0 1 0 12 9a2.5 2.5 0 0 0 0 5z"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div class="field">
+              <label for="jwt">JWT</label>
+              <input
+                id="jwt"
+                type="text"
+                value=""
+                placeholder="Paste a JWT here, or use Get JWT"
+                autocomplete="off"
+                spellcheck="false"
+              />
+            </div>
+            <div class="run">
+              <button type="button" class="primary" id="btnGetJwt">
+                Get JWT
+              </button>
+              <button type="button" class="secondary" id="btnClearJwt">
+                Clear JWT
               </button>
             </div>
           </div>
-        </div>
-        <div class="row">
-          <label for="scope">OAuth scope</label>
-          <input
-            id="scope"
-            value="main_antifraud_resource_server/public"
-            autocomplete="off"
-            readonly
-          />
-          <button type="button" class="secondary" id="btnGetJwt">
-            Get JWT
-          </button>
-        </div>
-        <label for="jwt">JWT</label>
-        <textarea
-          id="jwt"
-          placeholder="Paste a JWT here, or use Get JWT"
-          spellcheck="false"
-        ></textarea>
-      </section>
+        </section>
 
-      <div class="run">
-        <button type="button" class="primary" id="btnInitialize">
-          Initialize
-        </button>
-        <button type="button" class="secondary" id="btnCheck">Check</button>
+        <section class="panel">
+          <h2>Config</h2>
+          <div class="fields">
+            <div class="field">
+              <label for="baseUrl">Backend URL</label>
+              <input
+                id="baseUrl"
+                value="https://gatekeeper.bespot.dev/v2"
+                autocomplete="off"
+                readonly
+              />
+            </div>
+            <div class="field">
+              <label for="apiKey">API key</label>
+              <div class="secret-field">
+                <input
+                  id="apiKey"
+                  type="password"
+                  value=""
+                  placeholder="Enter API key"
+                  autocomplete="new-password"
+                />
+                <button
+                  type="button"
+                  class="toggle-secret"
+                  data-target="apiKey"
+                  aria-label="Show API key"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      fill="currentColor"
+                      d="M12 5c-5 0-9.27 3.11-11 7 1.73 3.89 6 7 11 7s9.27-3.11 11-7c-1.73-3.89-6-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-2.5A2.5 2.5 0 1 0 12 9a2.5 2.5 0 0 0 0 5z"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div class="field">
+              <label for="applicationId">Application ID</label>
+              <input
+                id="applicationId"
+                value=""
+                placeholder="Enter application ID"
+                autocomplete="off"
+              />
+            </div>
+            <div class="field">
+              <label for="applicationVersion">Application version</label>
+              <input
+                id="applicationVersion"
+                value=""
+                placeholder="Enter application version"
+                autocomplete="off"
+              />
+            </div>
+            <div class="field">
+              <label for="userId">User ID (optional)</label>
+              <input
+                id="userId"
+                value=""
+                placeholder="Enter user ID"
+                autocomplete="off"
+              />
+            </div>
+            <div class="run">
+              <button type="button" class="primary" id="btnInitialize">
+                Initialize
+              </button>
+              <button type="button" class="secondary" id="btnCheck">
+                Check
+              </button>
+            </div>
+          </div>
+        </section>
       </div>
 
-      <section class="panel">
+      <section class="panel log-panel">
         <div id="log" aria-live="polite" aria-label="Action results"></div>
       </section>
     </div>
 
     <script type="module">
+      const SDK_UMD_URL = '../../dist/safe-sdk.umd.min.js'
       const SDK_ESM_URL = '../../dist/safe-sdk.esm.min.js'
       const SDK_PKG_JSON_URL = '../../package.json'
 
       const logEl = document.getElementById('log')
       const sdkVersionEl = document.getElementById('sdkVersion')
-      let SafeSDK
-      let sdk
+      const btnFormatUmd = document.getElementById('btnFormatUmd')
+      const btnFormatEsm = document.getElementById('btnFormatEsm')
+
+      let format = 'umd'
+      let SafeSDKCtor = null
+      let sdk = null
+      let loadGeneration = 0
+      let cachedVersion = null
 
       function configFromForm() {
         return {
@@ -548,20 +665,20 @@
       }
 
       function ensureSdk(withConfig) {
-        if (typeof SafeSDK !== 'function') {
+        if (typeof SafeSDKCtor !== 'function') {
           throw new Error(
-            'SafeSDK ESM not loaded. Serve the release repo root over HTTP so ../../dist/safe-sdk.esm.min.js resolves.',
+            'SafeSDK not loaded. Serve the release repo root over HTTP so ../../dist/ resolves. Run: npm run sandbox',
           )
         }
         if (!sdk) {
           if (!withConfig) {
             throw new Error('Initialize first')
           }
-          sdk = new SafeSDK(configFromForm())
+          sdk = new SafeSDKCtor(configFromForm())
           return sdk
         }
         if (withConfig) {
-          sdk = new SafeSDK(configFromForm())
+          sdk = new SafeSDKCtor(configFromForm())
         }
         return sdk
       }
@@ -597,7 +714,33 @@
         }
       }
 
+      function loadUmdScript(url) {
+        return new Promise(function (resolve, reject) {
+          const script = document.createElement('script')
+          script.src = url
+          script.async = true
+          script.onload = function () {
+            if (typeof window.SafeSDK !== 'function') {
+              reject(new Error('Script loaded but window.SafeSDK is missing'))
+              return
+            }
+            resolve(window.SafeSDK)
+          }
+          script.onerror = function () {
+            reject(
+              new Error(
+                'Could not load SDK UMD from ' +
+                  url +
+                  '. From the release repo root run: npm run sandbox',
+              ),
+            )
+          }
+          document.head.appendChild(script)
+        })
+      }
+
       async function resolveSdkVersion() {
+        if (cachedVersion) return cachedVersion
         const response = await fetch(SDK_PKG_JSON_URL, { cache: 'no-store' })
         if (!response.ok) {
           throw new Error('HTTP ' + response.status + ' fetching package.json')
@@ -606,10 +749,36 @@
         if (!pkg || typeof pkg.version !== 'string') {
           throw new Error('package.json missing version')
         }
-        return pkg.version
+        cachedVersion = pkg.version
+        return cachedVersion
       }
 
-      void (async function bootstrapSdk() {
+      function syncToggleUi() {
+        btnFormatUmd.setAttribute(
+          'aria-pressed',
+          format === 'umd' ? 'true' : 'false',
+        )
+        btnFormatEsm.setAttribute(
+          'aria-pressed',
+          format === 'esm' ? 'true' : 'false',
+        )
+        document.title =
+          'Gatekeeper Web SDK — Sandbox (' + format.toUpperCase() + ')'
+      }
+
+      async function loadSdkForFormat(nextFormat, options) {
+        const clearLog = options && options.clearLog
+        const generation = ++loadGeneration
+        format = nextFormat
+        sdk = null
+        SafeSDKCtor = null
+        syncToggleUi()
+        sdkVersionEl.textContent = '…'
+
+        if (clearLog) {
+          logEl.textContent = ''
+        }
+
         let version = null
         let versionError = null
         try {
@@ -618,34 +787,57 @@
           versionError = err
         }
 
+        if (generation !== loadGeneration) return
+
         try {
-          const mod = await import(SDK_ESM_URL)
-          SafeSDK = mod.default
-          if (typeof SafeSDK !== 'function') {
-            throw new Error('ESM module loaded but default export SafeSDK is missing')
+          if (format === 'umd') {
+            if (typeof window.SafeSDK === 'function') {
+              SafeSDKCtor = window.SafeSDK
+            } else {
+              SafeSDKCtor = await loadUmdScript(SDK_UMD_URL)
+            }
+          } else {
+            const mod = await import(SDK_ESM_URL + '?t=' + Date.now())
+            SafeSDKCtor = mod.default
+            if (typeof SafeSDKCtor !== 'function') {
+              throw new Error(
+                'ESM module loaded but default export SafeSDK is missing',
+              )
+            }
           }
         } catch (err) {
+          if (generation !== loadGeneration) return
           sdkVersionEl.textContent = '—'
-          appendLog(
-            false,
-            'Load SDK',
-            formatError(err) +
-              '. From the release repo root run: npm run sandbox:esm',
-          )
+          appendLog(false, 'Load SDK', formatError(err))
           return
         }
 
+        if (generation !== loadGeneration) return
+
+        const url = format === 'umd' ? SDK_UMD_URL : SDK_ESM_URL
         if (version) {
           sdkVersionEl.textContent = version
-          appendLog(true, 'Load SDK', 'esm@' + version + ' (' + SDK_ESM_URL + ')')
+          appendLog(true, 'Load SDK', format + '@' + version + ' (' + url + ')')
         } else {
           sdkVersionEl.textContent = 'local dist'
-          appendLog(true, 'Load SDK', 'esm (' + SDK_ESM_URL + ')')
+          appendLog(true, 'Load SDK', format + ' (' + url + ')')
           if (versionError) {
             appendLog(false, 'SDK version', formatError(versionError))
           }
         }
-      })()
+      }
+
+      function switchFormat(nextFormat) {
+        if (nextFormat === format && SafeSDKCtor) return
+        void loadSdkForFormat(nextFormat, { clearLog: true })
+      }
+
+      btnFormatUmd.addEventListener('click', function () {
+        switchFormat('umd')
+      })
+      btnFormatEsm.addEventListener('click', function () {
+        switchFormat('esm')
+      })
 
       var EYE_OPEN =
         '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 5c-5 0-9.27 3.11-11 7 1.73 3.89 6 7 11 7s9.27-3.11 11-7c-1.73-3.89-6-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-2.5A2.5 2.5 0 1 0 12 9a2.5 2.5 0 0 0 0 5z"/></svg>'
@@ -664,6 +856,11 @@
             (showing ? 'Show' : 'Hide') + ' ' + (input.id || 'secret'),
           )
         })
+      })
+
+      document.getElementById('btnClearJwt').addEventListener('click', function () {
+        document.getElementById('jwt').value = ''
+        appendLog(true, 'Clear JWT', 'token cleared')
       })
 
       document.getElementById('btnGetJwt').addEventListener('click', function () {
@@ -753,7 +950,13 @@
             }
             ensureSdk(true)
             await sdk.initialize(jwt)
-            appendLog(true, 'Initialize', 'registered')
+            const userId = document.getElementById('userId').value.trim()
+            if (userId && typeof sdk.setUserId === 'function') {
+              sdk.setUserId(userId)
+              appendLog(true, 'Initialize', 'registered · userId set')
+            } else {
+              appendLog(true, 'Initialize', 'registered')
+            }
           })
         })
 
@@ -772,6 +975,8 @@
           )
         })
       })
+
+      void loadSdkForFormat('umd', { clearLog: false })
     </script>
   </body>
 </html>

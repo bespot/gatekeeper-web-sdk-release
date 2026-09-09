@@ -17,34 +17,30 @@ secret.
 - Production apps must mint JWTs on your server — see
   [Authentication](../docs/authentication.md).
 
-## Open the pages
+## Open the page
 
 From the **release repository root** (not `file://`):
 
 ```bash
-npm run sandbox:umd
-# or
-npm run sandbox:esm
+npm run sandbox
 ```
 
-That serves the repo and opens the matching page in your browser.
+That serves the repo and opens the sandbox in your browser. Use the **UMD / ESM**
+toggle in the header to switch formats in place (form fields are kept).
 
-Equivalent one-liners:
+Equivalent one-liner:
 
 ```bash
-npx --yes http-server . -o /examples/sandbox/umd.html
-npx --yes http-server . -o /examples/sandbox/esm.html
+npx --yes http-server . -o /examples/sandbox/index.html
 ```
 
-Manual alternative: `npx serve .` then open:
+Manual alternative: `npx serve .` then open
+[Sandbox](./index.html) → `/examples/sandbox/index.html`.
 
-- [UMD sandbox](./umd.html) → `/examples/sandbox/umd.html`
-- [ESM sandbox](./esm.html) → `/examples/sandbox/esm.html`
-
-Each page loads:
+The page loads:
 
 - UMD: `../../dist/safe-sdk.umd.min.js` via `window.SafeSDK`
-- ESM: `../../dist/safe-sdk.esm.min.js` via `import`
+- ESM: `../../dist/safe-sdk.esm.min.js` via dynamic `import()`
 
 The version badge reads `../../package.json`. If the SDK fails to load, you are
 usually not serving from the repo root.
@@ -63,7 +59,7 @@ usually not serving from the repo root.
 | JWT | `sdk.initialize(jwt)` — paste or Get JWT |
 
 Suggested flow: fill config → **Get JWT** (or paste a token) → **Initialize** →
-**Check**.
+**Check**. Switch UMD ↔ ESM to compare the same credentials on both bundles.
 
 ## Common issues
 

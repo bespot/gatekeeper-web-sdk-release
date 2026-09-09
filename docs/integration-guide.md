@@ -537,7 +537,7 @@ if (result instanceof Error && result.name === 'AuthenticationFailed') {
 
 ## 13. Troubleshooting
 
-Before deep debugging, you can exercise Initialize / Check against this repo’s `dist/` bundles with the [credentials sandbox](../examples/sandbox/) ([UMD](../examples/sandbox/umd.html) / [ESM](../examples/sandbox/esm.html)). That page is a sandbox harness (browser Get JWT exposes `client_secret`) — not a production pattern.
+Before deep debugging, you can exercise Initialize / Check against this repo’s `dist/` bundles with the [credentials sandbox](../examples/sandbox/) (`npm run sandbox`, UMD/ESM toggle in the header). That page is a sandbox harness (browser Get JWT exposes `client_secret`) — not a production pattern.
 
 ### `initialize` throws immediately
 
