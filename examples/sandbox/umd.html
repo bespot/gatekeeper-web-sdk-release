@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Gatekeeper Web SDK — Smoke Test (UMD)</title>
+    <title>Gatekeeper Web SDK — Sandbox (UMD)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -382,7 +382,7 @@
         <div class="brand">
           <div class="brand-mark">bespot</div>
           <span class="brand-chip">Gatekeeper</span>
-          <span class="brand-chip muted">Smoke · UMD</span>
+          <span class="brand-chip muted">Sandbox · UMD</span>
           <a class="twin-link" href="./esm.html">ESM version</a>
         </div>
         <div class="sdk-version" id="sdkVersion">…</div>
@@ -612,7 +612,7 @@
               resolve()
             }
             script.onerror = function () {
-              reject(new Error('Could not load SDK UMD from ' + url + '. Serve the release repo root (npx serve .) then open /examples/smoke-test/umd.html'))
+              reject(new Error('Could not load SDK UMD from ' + url + '. From the release repo root run: npm run sandbox:umd'))
             }
             document.head.appendChild(script)
           })

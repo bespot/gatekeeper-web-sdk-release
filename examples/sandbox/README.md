@@ -1,4 +1,4 @@
-# Credentials smoke test
+# Credentials sandbox
 
 Manual harness to verify your Gatekeeper Web SDK credentials against the **exact**
 bundles in this repository’s `dist/` folder (UMD and ESM).
@@ -19,16 +19,27 @@ secret.
 
 ## Open the pages
 
-Serve the **release repository root** over HTTP (not `file://`):
+From the **release repository root** (not `file://`):
 
 ```bash
-npx serve .
+npm run sandbox:umd
+# or
+npm run sandbox:esm
 ```
 
-Then open:
+That serves the repo and opens the matching page in your browser.
 
-- [UMD smoke test](./umd.html) → `/examples/smoke-test/umd.html`
-- [ESM smoke test](./esm.html) → `/examples/smoke-test/esm.html`
+Equivalent one-liners:
+
+```bash
+npx --yes http-server . -o /examples/sandbox/umd.html
+npx --yes http-server . -o /examples/sandbox/esm.html
+```
+
+Manual alternative: `npx serve .` then open:
+
+- [UMD sandbox](./umd.html) → `/examples/sandbox/umd.html`
+- [ESM sandbox](./esm.html) → `/examples/sandbox/esm.html`
 
 Each page loads:
 

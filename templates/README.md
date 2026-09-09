@@ -24,6 +24,6 @@ Starter files for Gatekeeper Web SDK integration. Copy into your project and rep
 - `/api/gatekeeper-token` — your backend JWT endpoint
 - `/sdk/safe-sdk.*.min.js` — path to your hosted bundle files
 
-## Credential smoke test
+## Credentials sandbox
 
-To verify API key / application / JWT against the published `dist/` bundles in this repo, use [`examples/smoke-test/`](../examples/smoke-test/) (UMD and ESM pages). That harness is for sandbox checks only — do not put `client_secret` in production frontends.
+To verify API key / application / JWT against the published `dist/` bundles in this repo, use [`examples/sandbox/`](../examples/sandbox/) (UMD and ESM pages). That harness is for sandbox checks only — do not put `client_secret` in production frontends.

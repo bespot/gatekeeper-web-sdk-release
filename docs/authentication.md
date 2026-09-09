@@ -117,14 +117,14 @@ await sdk.initialize(jwt)
 
 ## Verify credentials (sandbox)
 
-To confirm your Gatekeeper runtime config and a JWT against the exact SDK bundles in this repository, open the local smoke pages:
+To confirm your Gatekeeper runtime config and a JWT against the exact SDK bundles in this repository, open the local sandbox pages:
 
-- [UMD smoke test](../examples/smoke-test/umd.html)
-- [ESM smoke test](../examples/smoke-test/esm.html)
+- [UMD sandbox](../examples/sandbox/umd.html)
+- [ESM sandbox](../examples/sandbox/esm.html)
 
-How to serve them and which fields to fill: [examples/smoke-test/README.md](../examples/smoke-test/README.md).
+How to serve them and which fields to fill: [examples/sandbox/README.md](../examples/sandbox/README.md).
 
-Those pages include a browser **Get JWT** control that uses your OAuth client id and **client secret**. That is convenient for private smoke tests only. **Production applications must never expose `client_secret` in the browser** — mint tokens on your backend as described above.
+Those pages include a browser **Get JWT** control that uses your OAuth client id and **client secret**. That is convenient for private sandbox checks only. **Production applications must never expose `client_secret` in the browser** — mint tokens on your backend as described above.
 
 ---
 

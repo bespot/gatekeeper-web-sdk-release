@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Gatekeeper Web SDK — Smoke Test (ESM)</title>
+    <title>Gatekeeper Web SDK — Sandbox (ESM)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -382,7 +382,7 @@
         <div class="brand">
           <div class="brand-mark">bespot</div>
           <span class="brand-chip">Gatekeeper</span>
-          <span class="brand-chip muted">Smoke · ESM</span>
+          <span class="brand-chip muted">Sandbox · ESM</span>
           <a class="twin-link" href="./umd.html">UMD version</a>
         </div>
         <div class="sdk-version" id="sdkVersion">…</div>
@@ -630,7 +630,7 @@
             false,
             'Load SDK',
             formatError(err) +
-              '. Serve the release repo root (npx serve .) then open /examples/smoke-test/esm.html',
+              '. From the release repo root run: npm run sandbox:esm',
           )
           return
         }
