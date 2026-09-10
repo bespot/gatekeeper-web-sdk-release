@@ -1,6 +1,6 @@
 {
   "name": "@bespot/gatekeeper-web-sdk",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Bespot Gatekeeper Web SDK",
   "license": "SEE LICENSE IN LICENSE",
   "private": false,
