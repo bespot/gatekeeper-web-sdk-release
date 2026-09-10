@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 **Upstream release:** [v1.0.3](https://github.com/bespot/gatekeeper-web-sdk/releases/tag/v1.0.3)
 
+### Added
+
+- Credentials sandbox (`examples/sandbox/`) — open with `npm run sandbox` to verify your Gatekeeper config and JWT against the published UMD and ESM bundles locally
+
 ### Fixed
 
 - When your plan’s request quota is reached, the SDK now returns a clear `QuotaReachedForPlan` error instead of a generic failure, so you can prompt users to upgrade or retry after the quota resets
