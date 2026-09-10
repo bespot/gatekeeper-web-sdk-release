@@ -53,9 +53,8 @@ usually not serving from the repo root.
 | API key | SDK runtime — `x-api-key` |
 | Application ID | SDK runtime — path segment |
 | Application version | SDK runtime — path segment |
-| Cognito / auth host | Get JWT only (sandbox) |
+| Auth host | Get JWT only (sandbox) — Gatekeeper API host; sandbox calls `POST {auth host}/oauth2/token` |
 | Client ID / Client secret | Get JWT only (sandbox) |
-| OAuth scope | Get JWT only |
 | JWT | `sdk.initialize(jwt)` — paste or Get JWT |
 
 Suggested flow: fill config → **Get JWT** (or paste a token) → **Initialize** →
@@ -63,9 +62,9 @@ Suggested flow: fill config → **Get JWT** (or paste a token) → **Initialize*
 
 ## Common issues
 
-### Cognito CORS on Get JWT
+### CORS on Get JWT
 
-Many Cognito/token hosts block browser `Origin`s. If Get JWT fails with a
+Many auth hosts block browser `Origin`s. If Get JWT fails with a
 network/CORS error, mint a token with curl (or your backend) and paste it into
 **JWT**:
 
@@ -74,8 +73,7 @@ curl -sS --request POST \
   --url 'https://YOUR_AUTH_HOST/oauth2/token' \
   --user 'CLIENT_ID:CLIENT_SECRET' \
   --header 'Content-Type: application/x-www-form-urlencoded' \
-  --data-urlencode 'grant_type=client_credentials' \
-  --data-urlencode 'scope=YOUR_SCOPE'
+  --data-urlencode 'grant_type=client_credentials'
 ```
 
 ### Initialize → “could not reach the server” (`NetworkError`)

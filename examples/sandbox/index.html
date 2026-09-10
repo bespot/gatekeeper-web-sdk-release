@@ -192,7 +192,6 @@
         min-width: 0;
         display: flex;
         flex-direction: column;
-        height: 100%;
         gap: 0.7rem;
       }
 
@@ -200,8 +199,7 @@
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 0.75rem;
-        flex: 1.35 1 0;
-        min-height: 0;
+        flex: 0 0 auto;
         align-items: stretch;
       }
 
@@ -210,15 +208,12 @@
         font-size: 0.9rem;
         font-weight: 600;
         margin: 0;
-        flex-shrink: 0;
       }
 
       .fields {
         display: flex;
         flex-direction: column;
         gap: 0.7rem;
-        flex: 1 1 auto;
-        min-height: 0;
       }
 
       .field {
@@ -226,12 +221,6 @@
         flex-direction: column;
         gap: 0.22rem;
         min-width: 0;
-        flex-shrink: 0;
-      }
-
-      .fields > .run {
-        flex-shrink: 0;
-        margin-top: auto;
       }
 
       .run {
@@ -420,8 +409,8 @@
       }
 
       .log-panel {
-        flex: 1 1 0;
-        min-height: 7rem;
+        flex: 1 1 auto;
+        min-height: 8rem;
         display: flex;
         flex-direction: column;
         padding: 0.55rem;
@@ -483,21 +472,12 @@
           <h2>Auth</h2>
           <div class="fields">
             <div class="field">
-              <label for="authServerUrl">Cognito token URL</label>
+              <label for="authServerUrl">Auth host</label>
               <input
                 id="authServerUrl"
-                value="https://gatekeeper.auth.eu-west-1.amazoncognito.com"
+                value=""
+                placeholder="Enter auth host"
                 autocomplete="off"
-                readonly
-              />
-            </div>
-            <div class="field">
-              <label for="scope">OAuth scope</label>
-              <input
-                id="scope"
-                value="main_antifraud_resource_server/public"
-                autocomplete="off"
-                readonly
               />
             </div>
             <div class="field">
@@ -563,9 +543,9 @@
               <label for="baseUrl">Backend URL</label>
               <input
                 id="baseUrl"
-                value="https://gatekeeper.bespot.dev/v2"
+                value=""
+                placeholder="Enter backend URL"
                 autocomplete="off"
-                readonly
               />
             </div>
             <div class="field">
@@ -608,15 +588,6 @@
                 id="applicationVersion"
                 value=""
                 placeholder="Enter application version"
-                autocomplete="off"
-              />
-            </div>
-            <div class="field">
-              <label for="userId">User ID (optional)</label>
-              <input
-                id="userId"
-                value=""
-                placeholder="Enter user ID"
                 autocomplete="off"
               />
             </div>
@@ -873,7 +844,6 @@
           const clientSecret = document
             .getElementById('clientSecret')
             .value.trim()
-          const scope = document.getElementById('scope').value.trim()
           if (!authServerUrl || !clientId || !clientSecret) {
             appendLog(
               false,
@@ -885,7 +855,6 @@
 
           const body = new URLSearchParams()
           body.set('grant_type', 'client_credentials')
-          if (scope) body.set('scope', scope)
 
           const basic = btoa(clientId + ':' + clientSecret)
           let response
@@ -900,7 +869,7 @@
             })
           } catch (err) {
             throw new Error(
-              'Could not reach auth server (often Cognito CORS from the browser). Use curl instead. ' +
+              'Could not reach auth server (often CORS from the browser). Use curl instead. ' +
                 formatError(err),
             )
           }
@@ -950,13 +919,7 @@
             }
             ensureSdk(true)
             await sdk.initialize(jwt)
-            const userId = document.getElementById('userId').value.trim()
-            if (userId && typeof sdk.setUserId === 'function') {
-              sdk.setUserId(userId)
-              appendLog(true, 'Initialize', 'registered · userId set')
-            } else {
-              appendLog(true, 'Initialize', 'registered')
-            }
+            appendLog(true, 'Initialize', 'registered')
           })
         })
 
