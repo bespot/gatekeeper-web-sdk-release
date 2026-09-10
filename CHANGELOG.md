@@ -1,4 +1,3 @@
-changelog ok, chars 2694
 # Changelog
 
 All notable changes to the distributed Gatekeeper Web SDK packages in this repository.
@@ -15,8 +14,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [1.0.2] - 2026-07-27
 
-*Upstream release:** [v1.0.2](https://github.com/bespot/gatekeeper-web-sdk/releases/tag/v1.0.2)
+**Upstream release:** [v1.0.2](https://github.com/bespot/gatekeeper-web-sdk/releases/tag/v1.0.2)
 
 ### Added
 
