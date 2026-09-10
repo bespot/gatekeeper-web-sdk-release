@@ -10,7 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
-- When your plan’s request quota is reached, the SDK now returns a clear `QuotaReachedForPlan` error instead of a generic failure, so you are prompted to upgrade or retry after the quota resets
+- When your plan’s request quota is reached, the SDK now returns a clear `QuotaReachedForPlan` error instead of a generic failure, so you can prompt users to upgrade or retry after the quota resets
 
 ---
 
