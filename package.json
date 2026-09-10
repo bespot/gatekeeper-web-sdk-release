@@ -51,5 +51,8 @@
   "bugs": {
     "url": "https://github.com/bespot/gatekeeper-web-sdk-release/issues"
   },
-  "homepage": "https://github.com/bespot/gatekeeper-web-sdk-release#readme"
+  "homepage": "https://github.com/bespot/gatekeeper-web-sdk-release#readme",
+  "scripts": {
+    "sandbox": "npx --yes http-server . -o /examples/sandbox/index.html"
+  }
 }
