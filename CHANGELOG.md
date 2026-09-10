@@ -1,3 +1,4 @@
+changelog ok, chars 2694
 # Changelog
 
 All notable changes to the distributed Gatekeeper Web SDK packages in this repository.
@@ -8,19 +9,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 **Upstream release:** [v1.0.3](https://github.com/bespot/gatekeeper-web-sdk/releases/tag/v1.0.3)
 
-### Added
-
-### Changed
-
 ### Fixed
 
-### Removed
+- When your plan’s request quota is reached, the SDK now returns a clear `QuotaReachedForPlan` error instead of a generic failure, so you can prompt users to upgrade or retry after the quota resets
 
 ---
 
-## [1.0.2] - 2026-07-27
 
-**Upstream release:** [v1.0.2](https://github.com/bespot/gatekeeper-web-sdk/releases/tag/v1.0.2)
+*Upstream release:** [v1.0.2](https://github.com/bespot/gatekeeper-web-sdk/releases/tag/v1.0.2)
 
 ### Added
 
