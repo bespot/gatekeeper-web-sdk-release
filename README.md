@@ -31,6 +31,7 @@ SDK integration guides live in this repository. Official Bespot product document
 | [Error reference](docs/error-reference.md) | Error handling rules and `error.name` catalog |
 | [SDK versioning](docs/versioning.md) | SDK package version vs application version |
 | [Templates](templates/) | Copy-paste HTML and config starters |
+| [Sandbox](examples/sandbox/) | Manual UMD/ESM credential check against `dist/` |
 
 Official authentication API reference: [Bespot Authentication Guide](https://docs.bespot.com/api/auth?utm_source=readme&utm_medium=docs-auth&utm_campaign=gatekeeper-web-sdk&utm_content=readme-docs-auth).
 
@@ -61,6 +62,7 @@ No Node.js required. Download `safe-sdk.esm.min.js` or `safe-sdk.umd.min.js` fro
 3. **Configure** — four runtime fields: `baseUrl`, `apiKey`, `applicationId`, `applicationVersion` ([runtime configuration](docs/integration-guide.md#5-runtime-configuration))
 4. **Authenticate** — obtain a JWT from your backend ([authentication](docs/authentication.md))
 5. **Integrate** — `await sdk.initialize(jwt)` then `await sdk.check()` ([integration sequence](docs/integration-guide.md#6-integration-sequence))
+6. **Optional — verify credentials** — from this repo run `npm run sandbox` ([sandbox README](examples/sandbox/))
 
 ```ts
 const sdk = new SafeSDK({
@@ -80,7 +82,7 @@ if (result instanceof Error) {
 }
 ```
 
-Starter pages: [templates/integration-esm.html](templates/integration-esm.html), [templates/integration-umd.html](templates/integration-umd.html).
+Starter pages: [templates/integration-esm.html](templates/integration-esm.html), [templates/integration-umd.html](templates/integration-umd.html). Credentials sandbox: [examples/sandbox/](examples/sandbox/).
 
 ## Network behavior
 

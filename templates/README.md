@@ -23,3 +23,7 @@ Starter files for Gatekeeper Web SDK integration. Copy into your project and rep
 - `baseUrl`, `apiKey`, `applicationId`, `applicationVersion` — replace sample placeholders (see inline `// e.g.` comments in templates)
 - `/api/gatekeeper-token` — your backend JWT endpoint
 - `/sdk/safe-sdk.*.min.js` — path to your hosted bundle files
+
+## Credentials sandbox
+
+To verify API key / application / JWT against the published `dist/` bundles in this repo, use [`examples/sandbox/`](../examples/sandbox/) (`npm run sandbox`, UMD/ESM toggle). That harness is for sandbox checks only — do not put `client_secret` in production frontends.

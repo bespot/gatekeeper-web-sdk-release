@@ -112,6 +112,17 @@ const jwt = (await fetch('/api/gatekeeper-token').then((r) => r.text())).trim()
 await sdk.initialize(jwt)
 ```
 
+
+---
+
+## Verify credentials (sandbox)
+
+To confirm your Gatekeeper runtime config and a JWT against the exact SDK bundles in this repository, open the local [credentials sandbox](../examples/sandbox/index.html) (`npm run sandbox`). Use the header toggle to switch UMD ↔ ESM in place.
+
+How to serve it and which fields to fill: [examples/sandbox/README.md](../examples/sandbox/README.md).
+
+That page includes a browser **Get JWT** control that uses your OAuth client id and **client secret**. That is convenient for private sandbox checks only. **Production applications must never expose `client_secret` in the browser** — mint tokens on your backend as described above.
+
 ---
 
 ## JWT format requirements

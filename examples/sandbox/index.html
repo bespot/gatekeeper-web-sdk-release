@@ -1,0 +1,945 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Gatekeeper Web SDK — Sandbox</title>
+    <link rel="icon" href="/public/favicon.png" type="image/png" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600&family=Sofia+Sans:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bespot-navy: #231f40;
+        --bespot-navy-muted: rgba(35, 31, 64, 0.62);
+        --bespot-navy-soft: rgba(35, 31, 64, 0.08);
+        --bespot-magenta: #e41c51;
+        --bespot-magenta-hover: #c81645;
+        --bespot-blue: #1863dc;
+        --bespot-surface: #ffffff;
+        --bespot-page: #f4f4f4;
+        --bespot-page-accent: #eef2f8;
+        --bespot-border: #e0e2e8;
+        --radius: 12px;
+        --radius-pill: 40px;
+        color-scheme: light;
+        font-family: Manrope, system-ui, sans-serif;
+        line-height: 1.45;
+        color: var(--bespot-navy);
+        background: var(--bespot-page);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        height: 100dvh;
+        overflow: hidden;
+        background:
+          radial-gradient(
+            1200px 480px at 12% -10%,
+            rgba(24, 99, 220, 0.1),
+            transparent 55%
+          ),
+          radial-gradient(
+            900px 420px at 100% 0%,
+            rgba(228, 28, 81, 0.08),
+            transparent 50%
+          ),
+          linear-gradient(180deg, var(--bespot-page-accent), var(--bespot-page));
+      }
+
+      .page {
+        width: min(72rem, calc(100% - 2.5rem));
+        height: 100dvh;
+        margin: 0 auto;
+        padding: 1rem 0 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.65rem;
+        min-height: 0;
+      }
+
+      .top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-shrink: 0;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+      }
+
+      .brand-mark {
+        font-family: 'Sofia Sans', Manrope, sans-serif;
+        font-weight: 700;
+        font-size: 1.05rem;
+        letter-spacing: 0.02em;
+        color: var(--bespot-magenta);
+      }
+
+      /* Shared size for every top-line bubble (Gatekeeper / Sandbox / UMD·ESM / version) */
+      .brand-chip,
+      .sandbox-chip,
+      .format-toggle,
+      .sdk-version {
+        display: inline-flex;
+        align-items: center;
+        box-sizing: border-box;
+        height: 1.5rem;
+        border-radius: 999px;
+        font-family: 'Sofia Sans', Manrope, sans-serif;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        line-height: 1;
+        white-space: nowrap;
+      }
+
+      .brand-chip,
+      .sandbox-chip,
+      .sdk-version {
+        padding: 0 0.55rem;
+      }
+
+      .brand-chip {
+        color: var(--bespot-magenta);
+        background: rgba(228, 28, 81, 0.1);
+      }
+
+      .sandbox-chip {
+        color: var(--bespot-navy-muted);
+        background: rgba(35, 31, 64, 0.1);
+      }
+
+      .format-toggle {
+        padding: 0.15rem;
+        gap: 0.1rem;
+        background: rgba(35, 31, 64, 0.1);
+        border: none;
+      }
+
+      .format-toggle button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+        height: 100%;
+        margin: 0;
+        padding: 0 0.5rem;
+        border: none;
+        border-radius: 999px;
+        background: transparent;
+        color: var(--bespot-navy-muted);
+        font-family: inherit;
+        font-size: inherit;
+        font-weight: inherit;
+        letter-spacing: inherit;
+        text-transform: inherit;
+        line-height: 1;
+        cursor: pointer;
+        transform: none;
+        transition:
+          background 0.15s ease,
+          color 0.15s ease;
+      }
+
+      .format-toggle button:hover:not([aria-pressed='true']) {
+        color: var(--bespot-navy);
+        background: rgba(35, 31, 64, 0.06);
+      }
+
+      .format-toggle button[aria-pressed='true'] {
+        background: var(--bespot-magenta);
+        color: #fff;
+      }
+
+      .format-toggle button:focus-visible {
+        outline: 2px solid rgba(24, 99, 220, 0.55);
+        outline-offset: 2px;
+      }
+
+      .format-toggle button:active {
+        transform: none;
+      }
+
+      .sdk-version {
+        flex-shrink: 0;
+        color: var(--bespot-navy);
+        background: rgba(35, 31, 64, 0.06);
+        text-transform: none;
+        letter-spacing: 0.01em;
+      }
+
+      .panel {
+        background: var(--bespot-surface);
+        border: 1px solid var(--bespot-border);
+        border-radius: var(--radius);
+        padding: 0.85rem 1rem 1rem;
+        margin: 0;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.7rem;
+      }
+
+      .panels {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        flex: 0 0 auto;
+        align-items: stretch;
+      }
+
+      .panel h2 {
+        font-family: 'Sofia Sans', Manrope, sans-serif;
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin: 0;
+      }
+
+      .fields {
+        display: flex;
+        flex-direction: column;
+        gap: 0.7rem;
+      }
+
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.22rem;
+        min-width: 0;
+      }
+
+      .run {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.55rem;
+        width: 100%;
+      }
+
+      label {
+        display: block;
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+        margin: 0;
+        color: var(--bespot-navy-muted);
+      }
+
+      input {
+        width: 100%;
+        font: inherit;
+        font-size: 0.86rem;
+        color: var(--bespot-navy);
+        background: #fbfbfd;
+        border: 1px solid var(--bespot-border);
+        border-radius: 8px;
+        padding: 0.4rem 0.6rem;
+        transition:
+          border-color 0.15s ease,
+          box-shadow 0.15s ease;
+      }
+
+      input:focus {
+        outline: none;
+        border-color: rgba(24, 99, 220, 0.55);
+        box-shadow: 0 0 0 3px rgba(24, 99, 220, 0.15);
+        background: #fff;
+      }
+
+      input:read-only {
+        color: var(--bespot-navy-muted);
+        background: #f3f4f7;
+        cursor: default;
+      }
+
+      input:read-only:focus {
+        border-color: var(--bespot-border);
+        box-shadow: none;
+      }
+
+      input#jwt {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 0.78rem;
+      }
+
+      .secret-field {
+        position: relative;
+      }
+
+      .secret-field input {
+        width: 100%;
+        padding-right: 2.75rem;
+      }
+
+      .secret-field .toggle-secret {
+        position: absolute;
+        top: 50%;
+        right: 0.25rem;
+        transform: translateY(-50%);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.75rem;
+        height: 1.75rem;
+        margin: 0;
+        padding: 0;
+        border: none;
+        border-radius: 6px;
+        background: transparent;
+        color: var(--bespot-navy-muted);
+        cursor: pointer;
+      }
+
+      .secret-field .toggle-secret:hover {
+        color: var(--bespot-navy);
+        background: var(--bespot-navy-soft);
+      }
+
+      .secret-field .toggle-secret:focus-visible {
+        outline: 2px solid rgba(24, 99, 220, 0.55);
+        outline-offset: 2px;
+      }
+
+      .secret-field .toggle-secret:active {
+        transform: translateY(-50%);
+      }
+
+      .secret-field .toggle-secret svg {
+        width: 1.15rem;
+        height: 1.15rem;
+        display: block;
+      }
+
+      @media (max-width: 720px) {
+        body {
+          height: auto;
+          min-height: 100dvh;
+          overflow: auto;
+        }
+
+        .page {
+          height: auto;
+          min-height: 100dvh;
+        }
+
+        .panels {
+          grid-template-columns: 1fr;
+        }
+
+        .top {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .log-panel {
+          min-height: 10rem;
+        }
+      }
+
+      @media (max-width: 420px) {
+        .run {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      button {
+        font-family: 'Sofia Sans', Manrope, sans-serif;
+        font-size: 0.9rem;
+        font-weight: 500;
+        border-radius: var(--radius-pill);
+        padding: 0.5rem 1rem;
+        cursor: pointer;
+        border: 1.5px solid transparent;
+        transition:
+          background 0.15s ease,
+          color 0.15s ease,
+          border-color 0.15s ease,
+          transform 0.1s ease;
+      }
+
+      button:active {
+        transform: translateY(1px);
+      }
+
+      button.primary {
+        background: var(--bespot-magenta);
+        color: #fff;
+        border-color: var(--bespot-magenta);
+      }
+
+      button.primary:hover {
+        background: var(--bespot-magenta-hover);
+        border-color: var(--bespot-magenta-hover);
+      }
+
+      button.secondary {
+        background: transparent;
+        color: var(--bespot-magenta);
+        border-color: var(--bespot-magenta);
+      }
+
+      button.secondary:hover {
+        background: rgba(228, 28, 81, 0.08);
+      }
+
+      button.ghost {
+        background: transparent;
+        color: var(--bespot-navy);
+        border-color: var(--bespot-border);
+        white-space: nowrap;
+      }
+
+      button.ghost:hover {
+        border-color: rgba(35, 31, 64, 0.35);
+        background: var(--bespot-navy-soft);
+      }
+
+      .log-panel {
+        flex: 1 1 auto;
+        min-height: 8rem;
+        display: flex;
+        flex-direction: column;
+        padding: 0.55rem;
+      }
+
+      #log {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: auto;
+        padding: 0.65rem 0.75rem;
+        background: #1a1730;
+        color: #e8e6f2;
+        border-radius: 8px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 0.76rem;
+        line-height: 1.5;
+        white-space: pre-wrap;
+      }
+
+      #log:empty::before {
+        content: 'Action results will appear here…';
+        color: rgba(232, 230, 242, 0.45);
+      }
+
+      .ok {
+        color: #5ddea0;
+      }
+
+      .fail {
+        color: #ff7a9c;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="top">
+        <div class="brand">
+          <div class="brand-mark">bespot</div>
+          <span class="brand-chip">Gatekeeper</span>
+          <span class="sandbox-chip">Sandbox</span>
+          <div
+            class="format-toggle"
+            role="group"
+            aria-label="SDK bundle format"
+          >
+            <button type="button" id="btnFormatUmd" aria-pressed="true">
+              UMD
+            </button>
+            <button type="button" id="btnFormatEsm" aria-pressed="false">
+              ESM
+            </button>
+          </div>
+        </div>
+        <div class="sdk-version" id="sdkVersion">…</div>
+      </header>
+
+      <div class="panels">
+        <section class="panel">
+          <h2>Auth</h2>
+          <div class="fields">
+            <div class="field">
+              <label for="authServerUrl">Auth host</label>
+              <input
+                id="authServerUrl"
+                value=""
+                placeholder="Enter auth host"
+                autocomplete="off"
+              />
+            </div>
+            <div class="field">
+              <label for="clientId">Client ID</label>
+              <input
+                id="clientId"
+                value=""
+                placeholder="Enter client ID"
+                autocomplete="off"
+              />
+            </div>
+            <div class="field">
+              <label for="clientSecret">Client secret</label>
+              <div class="secret-field">
+                <input
+                  id="clientSecret"
+                  type="password"
+                  value=""
+                  placeholder="Enter client secret"
+                  autocomplete="new-password"
+                />
+                <button
+                  type="button"
+                  class="toggle-secret"
+                  data-target="clientSecret"
+                  aria-label="Show client secret"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      fill="currentColor"
+                      d="M12 5c-5 0-9.27 3.11-11 7 1.73 3.89 6 7 11 7s9.27-3.11 11-7c-1.73-3.89-6-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-2.5A2.5 2.5 0 1 0 12 9a2.5 2.5 0 0 0 0 5z"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div class="field">
+              <label for="jwt">JWT</label>
+              <input
+                id="jwt"
+                type="text"
+                value=""
+                placeholder="Paste a JWT here, or use Get JWT"
+                autocomplete="off"
+                spellcheck="false"
+              />
+            </div>
+            <div class="run">
+              <button type="button" class="primary" id="btnGetJwt">
+                Get JWT
+              </button>
+              <button type="button" class="secondary" id="btnClearJwt">
+                Clear JWT
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Config</h2>
+          <div class="fields">
+            <div class="field">
+              <label for="baseUrl">Backend URL</label>
+              <input
+                id="baseUrl"
+                value=""
+                placeholder="Enter backend URL"
+                autocomplete="off"
+              />
+            </div>
+            <div class="field">
+              <label for="apiKey">API key</label>
+              <div class="secret-field">
+                <input
+                  id="apiKey"
+                  type="password"
+                  value=""
+                  placeholder="Enter API key"
+                  autocomplete="new-password"
+                />
+                <button
+                  type="button"
+                  class="toggle-secret"
+                  data-target="apiKey"
+                  aria-label="Show API key"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      fill="currentColor"
+                      d="M12 5c-5 0-9.27 3.11-11 7 1.73 3.89 6 7 11 7s9.27-3.11 11-7c-1.73-3.89-6-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-2.5A2.5 2.5 0 1 0 12 9a2.5 2.5 0 0 0 0 5z"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div class="field">
+              <label for="applicationId">Application ID</label>
+              <input
+                id="applicationId"
+                value=""
+                placeholder="Enter application ID"
+                autocomplete="off"
+              />
+            </div>
+            <div class="field">
+              <label for="applicationVersion">Application version</label>
+              <input
+                id="applicationVersion"
+                value=""
+                placeholder="Enter application version"
+                autocomplete="off"
+              />
+            </div>
+            <div class="run">
+              <button type="button" class="primary" id="btnInitialize">
+                Initialize
+              </button>
+              <button type="button" class="secondary" id="btnCheck">
+                Check
+              </button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <section class="panel log-panel">
+        <div id="log" aria-live="polite" aria-label="Action results"></div>
+      </section>
+    </div>
+
+    <script type="module">
+      const SDK_UMD_URL = '../../dist/safe-sdk.umd.min.js'
+      const SDK_ESM_URL = '../../dist/safe-sdk.esm.min.js'
+      const SDK_PKG_JSON_URL = '../../package.json'
+
+      const logEl = document.getElementById('log')
+      const sdkVersionEl = document.getElementById('sdkVersion')
+      const btnFormatUmd = document.getElementById('btnFormatUmd')
+      const btnFormatEsm = document.getElementById('btnFormatEsm')
+
+      let format = 'umd'
+      let SafeSDKCtor = null
+      let sdk = null
+      let loadGeneration = 0
+      let cachedVersion = null
+
+      function configFromForm() {
+        return {
+          baseUrl: document.getElementById('baseUrl').value.trim(),
+          apiKey: document.getElementById('apiKey').value.trim(),
+          applicationId: document.getElementById('applicationId').value.trim(),
+          applicationVersion: document
+            .getElementById('applicationVersion')
+            .value.trim(),
+        }
+      }
+
+      function ensureSdk(withConfig) {
+        if (typeof SafeSDKCtor !== 'function') {
+          throw new Error(
+            'SafeSDK not loaded. Serve the release repo root over HTTP so ../../dist/ resolves. Run: npm run sandbox',
+          )
+        }
+        if (!sdk) {
+          if (!withConfig) {
+            throw new Error('Initialize first')
+          }
+          sdk = new SafeSDKCtor(configFromForm())
+          return sdk
+        }
+        if (withConfig) {
+          sdk = new SafeSDKCtor(configFromForm())
+        }
+        return sdk
+      }
+
+      function formatError(err) {
+        if (err instanceof Error) {
+          return (err.name || 'Error') + ' — ' + (err.message || String(err))
+        }
+        return String(err)
+      }
+
+      function appendLog(ok, action, detail) {
+        const line = document.createElement('div')
+        line.className = ok ? 'ok' : 'fail'
+        const stamp = new Date().toISOString().slice(11, 19)
+        line.textContent =
+          '[' +
+          stamp +
+          '] ' +
+          (ok ? 'OK' : 'FAIL') +
+          ' ' +
+          action +
+          (detail ? ': ' + detail : '')
+        logEl.appendChild(line)
+        logEl.scrollTop = logEl.scrollHeight
+      }
+
+      async function run(action, fn) {
+        try {
+          await fn()
+        } catch (err) {
+          appendLog(false, action, formatError(err))
+        }
+      }
+
+      function loadUmdScript(url) {
+        return new Promise(function (resolve, reject) {
+          const script = document.createElement('script')
+          script.src = url
+          script.async = true
+          script.onload = function () {
+            if (typeof window.SafeSDK !== 'function') {
+              reject(new Error('Script loaded but window.SafeSDK is missing'))
+              return
+            }
+            resolve(window.SafeSDK)
+          }
+          script.onerror = function () {
+            reject(
+              new Error(
+                'Could not load SDK UMD from ' +
+                  url +
+                  '. From the release repo root run: npm run sandbox',
+              ),
+            )
+          }
+          document.head.appendChild(script)
+        })
+      }
+
+      async function resolveSdkVersion() {
+        if (cachedVersion) return cachedVersion
+        const response = await fetch(SDK_PKG_JSON_URL, { cache: 'no-store' })
+        if (!response.ok) {
+          throw new Error('HTTP ' + response.status + ' fetching package.json')
+        }
+        const pkg = await response.json()
+        if (!pkg || typeof pkg.version !== 'string') {
+          throw new Error('package.json missing version')
+        }
+        cachedVersion = pkg.version
+        return cachedVersion
+      }
+
+      function syncToggleUi() {
+        btnFormatUmd.setAttribute(
+          'aria-pressed',
+          format === 'umd' ? 'true' : 'false',
+        )
+        btnFormatEsm.setAttribute(
+          'aria-pressed',
+          format === 'esm' ? 'true' : 'false',
+        )
+        document.title =
+          'Gatekeeper Web SDK — Sandbox (' + format.toUpperCase() + ')'
+      }
+
+      async function loadSdkForFormat(nextFormat, options) {
+        const clearLog = options && options.clearLog
+        const generation = ++loadGeneration
+        format = nextFormat
+        sdk = null
+        SafeSDKCtor = null
+        syncToggleUi()
+        sdkVersionEl.textContent = '…'
+
+        if (clearLog) {
+          logEl.textContent = ''
+        }
+
+        let version = null
+        let versionError = null
+        try {
+          version = await resolveSdkVersion()
+        } catch (err) {
+          versionError = err
+        }
+
+        if (generation !== loadGeneration) return
+
+        try {
+          if (format === 'umd') {
+            if (typeof window.SafeSDK === 'function') {
+              SafeSDKCtor = window.SafeSDK
+            } else {
+              SafeSDKCtor = await loadUmdScript(SDK_UMD_URL)
+            }
+          } else {
+            const mod = await import(SDK_ESM_URL + '?t=' + Date.now())
+            SafeSDKCtor = mod.default
+            if (typeof SafeSDKCtor !== 'function') {
+              throw new Error(
+                'ESM module loaded but default export SafeSDK is missing',
+              )
+            }
+          }
+        } catch (err) {
+          if (generation !== loadGeneration) return
+          sdkVersionEl.textContent = '—'
+          appendLog(false, 'Load SDK', formatError(err))
+          return
+        }
+
+        if (generation !== loadGeneration) return
+
+        const url = format === 'umd' ? SDK_UMD_URL : SDK_ESM_URL
+        if (version) {
+          sdkVersionEl.textContent = version
+          appendLog(true, 'Load SDK', format + '@' + version + ' (' + url + ')')
+        } else {
+          sdkVersionEl.textContent = 'local dist'
+          appendLog(true, 'Load SDK', format + ' (' + url + ')')
+          if (versionError) {
+            appendLog(false, 'SDK version', formatError(versionError))
+          }
+        }
+      }
+
+      function switchFormat(nextFormat) {
+        if (nextFormat === format && SafeSDKCtor) return
+        void loadSdkForFormat(nextFormat, { clearLog: true })
+      }
+
+      btnFormatUmd.addEventListener('click', function () {
+        switchFormat('umd')
+      })
+      btnFormatEsm.addEventListener('click', function () {
+        switchFormat('esm')
+      })
+
+      var EYE_OPEN =
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 5c-5 0-9.27 3.11-11 7 1.73 3.89 6 7 11 7s9.27-3.11 11-7c-1.73-3.89-6-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-2.5A2.5 2.5 0 1 0 12 9a2.5 2.5 0 0 0 0 5z"/></svg>'
+      var EYE_OFF =
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M2.1 3.51 3.51 2.1l18.39 18.39-1.41 1.41-3.13-3.13A12.7 12.7 0 0 1 12 19c-5 0-9.27-3.11-11-7a13.3 13.3 0 0 1 4.4-5.16L2.1 3.51zM12 7a5 5 0 0 1 5 5c0 .7-.15 1.36-.41 1.96l-1.6-1.6A2.5 2.5 0 0 0 12 9.5c-.2 0-.4.03-.58.08L9.58 7.74C10.3 7.27 11.12 7 12 7zm9.66 2.2-1.5 1.5c.55.7.98 1.47 1.28 2.3-1.73 3.89-6 7-11 7-.9 0-1.77-.12-2.6-.33l-1.66 1.66c1.33.43 2.76.67 4.26.67 5 0 9.27-3.11 11-7a13.4 13.4 0 0 0-2.78-3.8z"/></svg>'
+
+      document.querySelectorAll('.toggle-secret').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          const input = document.getElementById(btn.getAttribute('data-target'))
+          if (!input) return
+          const showing = input.type === 'text'
+          input.type = showing ? 'password' : 'text'
+          btn.innerHTML = showing ? EYE_OPEN : EYE_OFF
+          btn.setAttribute(
+            'aria-label',
+            (showing ? 'Show' : 'Hide') + ' ' + (input.id || 'secret'),
+          )
+        })
+      })
+
+      document.getElementById('btnClearJwt').addEventListener('click', function () {
+        document.getElementById('jwt').value = ''
+        appendLog(true, 'Clear JWT', 'token cleared')
+      })
+
+      document.getElementById('btnGetJwt').addEventListener('click', function () {
+        void run('Get JWT', async function () {
+          const authServerUrl = document
+            .getElementById('authServerUrl')
+            .value.trim()
+            .replace(/\/$/, '')
+          const clientId = document.getElementById('clientId').value.trim()
+          const clientSecret = document
+            .getElementById('clientSecret')
+            .value.trim()
+          if (!authServerUrl || !clientId || !clientSecret) {
+            appendLog(
+              false,
+              'Get JWT',
+              'auth server URL, client ID, and client secret are required',
+            )
+            return
+          }
+
+          const body = new URLSearchParams()
+          body.set('grant_type', 'client_credentials')
+
+          const basic = btoa(clientId + ':' + clientSecret)
+          let response
+          try {
+            response = await fetch(authServerUrl + '/oauth2/token', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                Authorization: 'Basic ' + basic,
+              },
+              body: body.toString(),
+            })
+          } catch (err) {
+            throw new Error(
+              'Could not reach auth server (often CORS from the browser). Use curl instead. ' +
+                formatError(err),
+            )
+          }
+
+          const text = await response.text()
+          let json
+          try {
+            json = JSON.parse(text)
+          } catch {
+            throw new Error(
+              'HTTP ' +
+                response.status +
+                ' — non-JSON response: ' +
+                text.slice(0, 200),
+            )
+          }
+          if (!response.ok) {
+            throw new Error(
+              'HTTP ' +
+                response.status +
+                ' — ' +
+                (json.error_description || json.error || text.slice(0, 200)),
+            )
+          }
+          const token = json.access_token
+          if (!token || typeof token !== 'string') {
+            throw new Error('Response missing access_token')
+          }
+          document.getElementById('jwt').value = token
+          appendLog(
+            true,
+            'Get JWT',
+            'token set' +
+              (json.expires_in ? ' (expires_in=' + json.expires_in + 's)' : ''),
+          )
+        })
+      })
+
+      document
+        .getElementById('btnInitialize')
+        .addEventListener('click', function () {
+          void run('Initialize', async function () {
+            const jwt = document.getElementById('jwt').value.trim()
+            if (!jwt) {
+              appendLog(false, 'Initialize', 'JWT is empty')
+              return
+            }
+            ensureSdk(true)
+            await sdk.initialize(jwt)
+            appendLog(true, 'Initialize', 'registered')
+          })
+        })
+
+      document.getElementById('btnCheck').addEventListener('click', function () {
+        void run('Check', async function () {
+          ensureSdk(false)
+          const result = await sdk.check()
+          if (result instanceof Error) {
+            appendLog(false, 'Check', formatError(result))
+            return
+          }
+          appendLog(
+            true,
+            'Check',
+            'action=' + result.action + ' ticket=' + result.ticket,
+          )
+        })
+      })
+
+      void loadSdkForFormat('umd', { clearLog: false })
+    </script>
+  </body>
+</html>
