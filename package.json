@@ -1,6 +1,6 @@
 {
   "name": "@bespot/gatekeeper-web-sdk",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Bespot Gatekeeper Web SDK",
   "license": "SEE LICENSE IN LICENSE",
   "private": false,
@@ -51,8 +51,5 @@
   "bugs": {
     "url": "https://github.com/bespot/gatekeeper-web-sdk-release/issues"
   },
-  "homepage": "https://github.com/bespot/gatekeeper-web-sdk-release#readme",
-  "scripts": {
-    "sandbox": "npx --yes http-server . -o /examples/sandbox/index.html"
-  }
+  "homepage": "https://github.com/bespot/gatekeeper-web-sdk-release#readme"
 }
