@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Gatekeeper Web SDK — Sandbox</title>
     <link rel="icon" href="/public/favicon.png" type="image/png" />
-    <link rel="shortcut icon" href="/favicon.ico" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -609,9 +608,14 @@
     </div>
 
     <script type="module">
-      const SDK_UMD_URL = '../../dist/safe-sdk.umd.min.js'
-      const SDK_ESM_URL = '../../dist/safe-sdk.esm.min.js'
-      const SDK_PKG_JSON_URL = '../../package.json'
+      const SDK_PKG = '@bespot/gatekeeper-web-sdk'
+      const SDK_VERSION =
+        new URLSearchParams(location.search).get('v') || 'latest'
+      const CDN_BASE =
+        'https://cdn.jsdelivr.net/npm/' + SDK_PKG + '@' + SDK_VERSION
+      const SDK_UMD_URL = CDN_BASE + '/dist/safe-sdk.umd.min.js'
+      const SDK_ESM_URL = CDN_BASE + '/dist/safe-sdk.esm.min.js'
+      const SDK_PKG_JSON_URL = CDN_BASE + '/package.json'
 
       const logEl = document.getElementById('log')
       const sdkVersionEl = document.getElementById('sdkVersion')
@@ -638,7 +642,7 @@
       function ensureSdk(withConfig) {
         if (typeof SafeSDKCtor !== 'function') {
           throw new Error(
-            'SafeSDK not loaded. Serve the release repo root over HTTP so ../../dist/ resolves. Run: npm run sandbox',
+            'SafeSDK not loaded. Check network access to ' + CDN_BASE,
           )
         }
         if (!sdk) {
@@ -698,13 +702,7 @@
             resolve(window.SafeSDK)
           }
           script.onerror = function () {
-            reject(
-              new Error(
-                'Could not load SDK UMD from ' +
-                  url +
-                  '. From the release repo root run: npm run sandbox',
-              ),
-            )
+            reject(new Error('Could not load SDK UMD from ' + url))
           }
           document.head.appendChild(script)
         })
@@ -790,8 +788,8 @@
           sdkVersionEl.textContent = version
           appendLog(true, 'Load SDK', format + '@' + version + ' (' + url + ')')
         } else {
-          sdkVersionEl.textContent = 'local dist'
-          appendLog(true, 'Load SDK', format + ' (' + url + ')')
+          sdkVersionEl.textContent = SDK_VERSION
+          appendLog(true, 'Load SDK', format + '@' + SDK_VERSION + ' (' + url + ')')
           if (versionError) {
             appendLog(false, 'SDK version', formatError(versionError))
           }

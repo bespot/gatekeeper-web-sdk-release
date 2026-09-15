@@ -31,7 +31,7 @@ SDK integration guides live in this repository. Official Bespot product document
 | [Error reference](docs/error-reference.md) | Error handling rules and `error.name` catalog |
 | [SDK versioning](docs/versioning.md) | SDK package version vs application version |
 | [Templates](templates/) | Copy-paste HTML and config starters |
-| [Sandbox](examples/sandbox/) | Manual UMD/ESM credential check against `dist/` |
+| [Sandbox](examples/sandbox/) | Manual UMD/ESM credential check against published npm packages (jsDelivr) |
 
 Official authentication API reference: [Bespot Authentication Guide](https://docs.bespot.com/api/auth?utm_source=readme&utm_medium=docs-auth&utm_campaign=gatekeeper-web-sdk&utm_content=readme-docs-auth).
 

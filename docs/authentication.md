@@ -117,7 +117,7 @@ await sdk.initialize(jwt)
 
 ## Verify credentials (sandbox)
 
-To confirm your Gatekeeper runtime config and a JWT against the exact SDK bundles in this repository, open the local [credentials sandbox](../examples/sandbox/index.html) (`npm run sandbox`). Use the header toggle to switch UMD ↔ ESM in place.
+To confirm your Gatekeeper runtime config and a JWT against the published npm SDK packages, open the [credentials sandbox](../examples/sandbox/index.html) (`npm run sandbox`). It loads UMD/ESM from jsDelivr; use the header toggle to switch formats in place.
 
 How to serve it and which fields to fill: [examples/sandbox/README.md](../examples/sandbox/README.md).
 

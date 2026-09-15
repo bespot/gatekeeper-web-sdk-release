@@ -1,7 +1,7 @@
 # Credentials sandbox
 
-Manual harness to verify your Gatekeeper Web SDK credentials against the **exact**
-bundles in this repository’s `dist/` folder (UMD and ESM).
+Manual harness to verify your Gatekeeper Web SDK credentials against the
+**published** npm packages (UMD and ESM) via jsDelivr.
 
 This is **not** a production integration starter. For copy-paste app scaffolding,
 use [`templates/`](../templates/).
@@ -28,6 +28,10 @@ npm run sandbox
 That serves the repo and opens the sandbox in your browser. Use the **UMD / ESM**
 toggle in the header to switch formats in place (form fields are kept).
 
+You can also host `index.html` on any static host (e.g. Cloudflare Pages) — the
+page loads the SDK from the npm CDN, so `dist/` does not need to be deployed
+with it.
+
 Equivalent one-liner:
 
 ```bash
@@ -37,13 +41,13 @@ npx --yes http-server . -o /examples/sandbox/index.html
 Manual alternative: `npx serve .` then open
 [Sandbox](./index.html) → `/examples/sandbox/index.html`.
 
-The page loads:
+The page loads from jsDelivr:
 
-- UMD: `../../dist/safe-sdk.umd.min.js` via `window.SafeSDK`
-- ESM: `../../dist/safe-sdk.esm.min.js` via dynamic `import()`
+- UMD: `https://cdn.jsdelivr.net/npm/@bespot/gatekeeper-web-sdk@latest/dist/safe-sdk.umd.min.js` via `window.SafeSDK`
+- ESM: `…/dist/safe-sdk.esm.min.js` via dynamic `import()`
 
-The version badge reads `../../package.json`. If the SDK fails to load, you are
-usually not serving from the repo root.
+Pin a version with `?v=1.0.2` on the sandbox URL (default is `latest`). The
+version badge reads `package.json` from the same CDN package.
 
 ## Credentials checklist
 

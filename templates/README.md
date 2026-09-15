@@ -26,4 +26,4 @@ Starter files for Gatekeeper Web SDK integration. Copy into your project and rep
 
 ## Credentials sandbox
 
-To verify API key / application / JWT against the published `dist/` bundles in this repo, use [`examples/sandbox/`](../examples/sandbox/) (`npm run sandbox`, UMD/ESM toggle). That harness is for sandbox checks only — do not put `client_secret` in production frontends.
+To verify API key / application / JWT against the published npm SDK packages, use [`examples/sandbox/`](../examples/sandbox/) (`npm run sandbox`, UMD/ESM toggle; loads from jsDelivr). That harness is for sandbox checks only — do not put `client_secret` in production frontends.
