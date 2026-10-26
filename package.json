@@ -1,6 +1,6 @@
 {
   "name": "@bespot/gatekeeper-web-sdk",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "Bespot Gatekeeper Web SDK",
   "license": "SEE LICENSE IN LICENSE",
   "private": false,
@@ -44,6 +44,9 @@
     "ecommerce",
     "fintech"
   ],
+  "scripts": {
+    "sandbox": "npx --yes http-server . -o /examples/sandbox/index.html"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/bespot/gatekeeper-web-sdk-release.git"
@@ -51,8 +54,5 @@
   "bugs": {
     "url": "https://github.com/bespot/gatekeeper-web-sdk-release/issues"
   },
-  "homepage": "https://github.com/bespot/gatekeeper-web-sdk-release#readme",
-  "scripts": {
-    "sandbox": "npx --yes http-server . -o /examples/sandbox/index.html"
-  }
+  "homepage": "https://github.com/bespot/gatekeeper-web-sdk-release#readme"
 }
